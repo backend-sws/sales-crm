@@ -1,0 +1,617 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "SalesCRM API v1 Documentation",
+        "description": "Official RESTful API documentation for SalesCRM built with Laravel 13, Service-Interface architecture, and standardized response envelope.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:8000",
+            "description": "Local Development Server"
+        }
+    ],
+    "paths": {
+        "/api/v1/auth/register": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register new user",
+                "operationId": "b9e746d77661fb8df55d0ac63e1ece77",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Rahul Sharma"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "rahul@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login and obtain access token",
+                "operationId": "a7997e7c1e3bfed64d4e56de82415931",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@salescrm.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Logged in successfully"
+                    },
+                    "422": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/user": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get authenticated user profile",
+                "operationId": "8da19d20faaa3c751514549040698f0d",
+                "responses": {
+                    "200": {
+                        "description": "User profile retrieved"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout current session and revoke token",
+                "operationId": "f6b8957b4c0b25636613a9f0512a8ba9",
+                "responses": {
+                    "200": {
+                        "description": "Logged out successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/dashboard": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get CRM dashboard metrics and pipeline funnel telemetry",
+                "operationId": "d1625943bfc57cc98d4de5135ef923aa",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard metrics and breakdown retrieved"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/follow-ups": {
+            "get": {
+                "tags": [
+                    "FollowUps"
+                ],
+                "summary": "List all follow-ups with filters",
+                "operationId": "a868756c2747d6485ee696dbc66e3351",
+                "responses": {
+                    "200": {
+                        "description": "Follow-ups retrieved"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "FollowUps"
+                ],
+                "summary": "Schedule a new follow-up",
+                "operationId": "3075cb02351c8a8872528c957b278fb5",
+                "responses": {
+                    "201": {
+                        "description": "Follow-up scheduled successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/follow-ups/today": {
+            "get": {
+                "tags": [
+                    "FollowUps"
+                ],
+                "summary": "Get today's pending follow-ups",
+                "operationId": "50b3455ec66e2d9a623a49aed0aa8229",
+                "responses": {
+                    "200": {
+                        "description": "Today's follow-ups retrieved"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/follow-ups/overdue": {
+            "get": {
+                "tags": [
+                    "FollowUps"
+                ],
+                "summary": "Get overdue pending follow-ups",
+                "operationId": "1b6c385ee401974ea006c486ed4e79ab",
+                "responses": {
+                    "200": {
+                        "description": "Overdue follow-ups retrieved"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/follow-ups/{id}/complete": {
+            "patch": {
+                "tags": [
+                    "FollowUps"
+                ],
+                "summary": "Complete a follow-up and optionally schedule next follow-up",
+                "operationId": "5da10301bb907b9185047f1dc90e960c",
+                "responses": {
+                    "200": {
+                        "description": "Follow-up marked complete"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads": {
+            "get": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "List all leads with pagination and filters",
+                "operationId": "d660caaedd473f1082c49dca5634bb53",
+                "responses": {
+                    "200": {
+                        "description": "Leads paginated list retrieved"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Create a new lead",
+                "operationId": "816520615fff48e26eb49ca76b38a78c",
+                "responses": {
+                    "201": {
+                        "description": "Lead created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/kanban": {
+            "get": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Get leads grouped by all 8 pipeline stages for Kanban board",
+                "operationId": "74315abf88a99bfce8b534e584692113",
+                "responses": {
+                    "200": {
+                        "description": "Kanban board stages retrieved"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/metadata": {
+            "get": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Get metadata for lead creation (sources, products, agents)",
+                "operationId": "df59383be92e54744ca68e6169c450c3",
+                "responses": {
+                    "200": {
+                        "description": "Metadata retrieved"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/{id}": {
+            "get": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Get lead profile details by ID",
+                "operationId": "98016cde9c68e9141706836cc7fdaf64",
+                "responses": {
+                    "200": {
+                        "description": "Lead details"
+                    },
+                    "404": {
+                        "description": "Lead not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Update lead details",
+                "operationId": "faf961e206ec33f3b93fd99df581b714",
+                "responses": {
+                    "200": {
+                        "description": "Lead updated"
+                    },
+                    "404": {
+                        "description": "Lead not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Soft delete lead by ID",
+                "operationId": "c6c986123e64538585118bd2ca61d331",
+                "responses": {
+                    "200": {
+                        "description": "Lead deleted"
+                    },
+                    "404": {
+                        "description": "Lead not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/{id}/status": {
+            "patch": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Update lead pipeline status with mandatory lost reason handling",
+                "operationId": "2c891ed468047391098bdc5059c59b02",
+                "responses": {
+                    "200": {
+                        "description": "Lead status updated"
+                    },
+                    "404": {
+                        "description": "Lead not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/{id}/assign": {
+            "post": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Assign or reassign lead to a sales agent",
+                "operationId": "5aa0b3ffe943845bf77344a85d86bf38",
+                "responses": {
+                    "200": {
+                        "description": "Lead assigned successfully"
+                    },
+                    "404": {
+                        "description": "Lead not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/bulk-assign": {
+            "post": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Bulk assign multiple leads to an agent",
+                "operationId": "42b9d1948322cef2f22c2162f42874ca",
+                "responses": {
+                    "200": {
+                        "description": "Bulk assign complete"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/bulk-status": {
+            "post": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Bulk update status for selected leads",
+                "operationId": "2576b3418dcdd766de0676c6292b1baf",
+                "responses": {
+                    "200": {
+                        "description": "Bulk status update complete"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/{id}/merge": {
+            "post": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Merge a duplicate lead into this master lead",
+                "operationId": "e753502987a09d884af69886dfe9fc1d",
+                "responses": {
+                    "200": {
+                        "description": "Leads merged successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/{id}/timeline": {
+            "get": {
+                "tags": [
+                    "Leads"
+                ],
+                "summary": "Get activity timeline for a lead",
+                "operationId": "bd31152f859605f69c3b8c3a8d762fa8",
+                "responses": {
+                    "200": {
+                        "description": "Lead timeline feed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/import/preview": {
+            "post": {
+                "tags": [
+                    "LeadImports"
+                ],
+                "summary": "Upload spreadsheet and preview columns for mapping",
+                "operationId": "6615f3b94263ed1d9aea08893531c007",
+                "responses": {
+                    "200": {
+                        "description": "Spreadsheet parsed and headers extracted"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/import/process": {
+            "post": {
+                "tags": [
+                    "LeadImports"
+                ],
+                "summary": "Process import batch with column mappings and duplicate strategy",
+                "operationId": "22112ba8673bbe40600f2fe552a6ec1d",
+                "responses": {
+                    "200": {
+                        "description": "Import batch processed successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/leads/import/{id}/status": {
+            "get": {
+                "tags": [
+                    "LeadImports"
+                ],
+                "summary": "Check import batch status and error logs",
+                "operationId": "85f3e498361c8f1b352ab799f1d1ea60",
+                "responses": {
+                    "200": {
+                        "description": "Import status retrieved"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter Bearer token obtained from /api/v1/auth/login",
+                "bearerFormat": "Sanctum Token",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Authentication",
+            "description": "Endpoints for user authentication and session management"
+        },
+        {
+            "name": "Dashboard",
+            "description": "CRM aggregate analytics, funnel stage metrics and stats"
+        },
+        {
+            "name": "FollowUps",
+            "description": "Follow-up scheduling, execution and chaining"
+        },
+        {
+            "name": "Leads",
+            "description": "CRM Leads pipeline, deals, activities and stage management"
+        },
+        {
+            "name": "LeadImports",
+            "description": "Bulk CSV/Excel lead import wizard and deduplication"
+        }
+    ]
+}

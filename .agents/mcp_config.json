@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "laravel-boost": {
+      "command": "php",
+      "args": [
+        "c:/Users/Employee/Desktop/salescrm/backend/artisan",
+        "boost:mcp"
+      ],
+      "cwd": "c:/Users/Employee/Desktop/salescrm/backend"
+    }
+  }
+}
