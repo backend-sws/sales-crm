@@ -15,6 +15,7 @@ import {
 import type { ClientDocumentItem } from '@/api/clients.api';
 import { clientsApi } from '@/api/clients.api';
 import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
 import { ESignDocumentModal } from './ESignDocumentModal';
 import { toast } from 'sonner';
 
@@ -195,86 +196,80 @@ export const ClientDocumentsPanel: React.FC<ClientDocumentsPanelProps> = ({
       </div>
 
       {/* Upload Document Modal */}
-      {isAddOpen && createPortal(
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsAddOpen(false);
-          }}
-        >
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 w-full max-w-md overflow-hidden">
-            <div className="p-6 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Add Document for E-Signature
-                </h3>
-                <p className="text-xs text-slate-500">Service contract, NDA, or custom proposal</p>
-              </div>
-              <button
-                onClick={() => setIsAddOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <Modal
+        isOpen={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+        title={
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0">
+              <Upload className="w-4 h-4" />
             </div>
-
-            <form onSubmit={handleAddDocument} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Document Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                  placeholder="e.g., Master Services Agreement (MSA) 2026"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Document Type *
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                >
-                  <option value="contract">Master Contract</option>
-                  <option value="proposal">Commercial Proposal</option>
-                  <option value="nda">Non-Disclosure Agreement (NDA)</option>
-                  <option value="welcome">Welcome Onboarding Kit</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Document File URL (or Storage Link)
-                </label>
-                <input
-                  type="url"
-                  value={formData.file_url}
-                  onChange={(e) => setFormData({ ...formData, file_url: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                  placeholder="https://agency.com/agreements/doc.pdf"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex justify-end gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setIsAddOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" isLoading={adding} className="bg-primary-600 hover:bg-primary-700 text-white">
-                  Add Document
-                </Button>
-              </div>
-            </form>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                Add Document for E-Signature
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-normal">
+                Service contract, NDA, or custom proposal
+              </p>
+            </div>
           </div>
-        </div>,
-        document.body
-      )}
+        }
+        maxWidth="md"
+      >
+        <form onSubmit={handleAddDocument} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Document Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+              placeholder="e.g., Master Services Agreement (MSA) 2026"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Document Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+            >
+              <option value="contract">Master Contract</option>
+              <option value="proposal">Commercial Proposal</option>
+              <option value="nda">Non-Disclosure Agreement (NDA)</option>
+              <option value="welcome">Welcome Onboarding Kit</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Document File URL (or Storage Link)
+            </label>
+            <input
+              type="url"
+              value={formData.file_url}
+              onChange={(e) => setFormData({ ...formData, file_url: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+              placeholder="https://agency.com/agreements/doc.pdf"
+            />
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 flex justify-end gap-2.5">
+            <Button type="button" variant="outline" size="sm" onClick={() => setIsAddOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" isLoading={adding} className="bg-primary-600 hover:bg-primary-700 text-white">
+              Add Document
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* E-Sign Modal */}
       <ESignDocumentModal

@@ -123,12 +123,12 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-[#121217] rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header with Multi-step indicator */}
         <div className="p-6 bg-gradient-to-br from-primary-600/10 via-primary-500/5 to-transparent border-b border-slate-200 dark:border-white/10 relative">
           <button
@@ -208,7 +208,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                     required
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     placeholder="Acme Technologies Pvt Ltd"
                   />
                 </div>
@@ -222,7 +222,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     placeholder="Contact person"
                   />
                 </div>
@@ -236,7 +236,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     placeholder="billing@company.com"
                   />
                 </div>
@@ -249,7 +249,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     placeholder="+91 9876543210"
                   />
                 </div>
@@ -262,7 +262,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                     type="text"
                     value={formData.gst_number}
                     onChange={(e) => setFormData({ ...formData, gst_number: e.target.value.toUpperCase() })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium uppercase focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium uppercase focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-mono"
                     placeholder="27ABCDE1234F1Z5"
                   />
                 </div>
@@ -274,7 +274,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                   <select
                     value={formData.billing_state}
                     onChange={(e) => setFormData({ ...formData, billing_state: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   >
                     <option value="Maharashtra">Maharashtra (Intra-state: CGST 9% + SGST 9%)</option>
                     <option value="Karnataka">Karnataka (Inter-state: IGST 18%)</option>
@@ -297,7 +297,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                   rows={2}
                   value={formData.billing_address}
                   onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   placeholder="Street address, City, Pincode"
                 />
               </div>
@@ -321,7 +321,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                   required
                   value={formData.service_name}
                   onChange={(e) => setFormData({ ...formData, service_name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   placeholder="e.g., Monthly Digital Retainer & SEO"
                 />
               </div>
@@ -334,7 +334,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                   <select
                     value={formData.service_type}
                     onChange={(e) => setFormData({ ...formData, service_type: e.target.value as any })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   >
                     <option value="recurring">Recurring Retainer (Subscription)</option>
                     <option value="one_time">One-Time Project / Deliverable</option>
@@ -349,7 +349,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                   <select
                     value={formData.billing_cycle}
                     onChange={(e) => setFormData({ ...formData, billing_cycle: e.target.value as any })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   >
                     <option value="monthly">Monthly Cycle</option>
                     <option value="quarterly">Quarterly Cycle</option>
@@ -370,7 +370,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                       min={0}
                       value={formData.value}
                       onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
-                      className="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-bold focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                      className="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-bold focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
                 </div>
@@ -384,7 +384,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                     required
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   />
                 </div>
               </div>
@@ -457,7 +457,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                       required={formData.create_user}
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
                 </div>
@@ -479,7 +479,7 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                     type="text"
                     value={formData.primary_color}
                     onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                    className="w-32 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-mono font-bold uppercase"
+                    className="w-32 px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-xs font-mono font-bold uppercase"
                   />
                   <div
                     className="h-8 flex-1 rounded-xl flex items-center px-4 text-xs font-bold text-white shadow-xs"

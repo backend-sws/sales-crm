@@ -15,6 +15,7 @@ import {
 import type { InvoiceItem, ClientServiceItem } from '@/api/clients.api';
 import { clientsApi } from '@/api/clients.api';
 import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
 import { toast } from 'sonner';
 
 interface RetainerInvoicesPanelProps {
@@ -228,84 +229,82 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
       </div>
 
       {/* Record Payment Modal */}
-      {isMarkPaidOpen && selectedInvoice && createPortal(
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsMarkPaidOpen(false);
-          }}
-        >
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 w-full max-w-md overflow-hidden">
-            <div className="p-6 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Record Invoice Payment</h3>
-                <p className="text-xs text-slate-500">Invoice #{selectedInvoice.invoice_number}</p>
+      {selectedInvoice && (
+        <Modal
+          isOpen={isMarkPaidOpen}
+          onClose={() => setIsMarkPaidOpen(false)}
+          title={
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <CreditCard className="w-4 h-4" />
               </div>
-              <button
-                onClick={() => setIsMarkPaidOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Record Invoice Payment
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-normal">
+                  Invoice #{selectedInvoice.invoice_number} · Total ₹{Number(selectedInvoice.total_amount).toLocaleString('en-IN')}
+                </p>
+              </div>
+            </div>
+          }
+          maxWidth="md"
+        >
+          <form onSubmit={handleMarkPaidSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Amount Received (₹ INR) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                required
+                min={1}
+                max={Number(selectedInvoice.total_amount)}
+                value={paymentData.paid_amount}
+                onChange={(e) => setPaymentData({ ...paymentData, paid_amount: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              />
             </div>
 
-            <form onSubmit={handleMarkPaidSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Amount Received (₹ INR) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min={1}
-                  max={Number(selectedInvoice.total_amount)}
-                  value={paymentData.paid_amount}
-                  onChange={(e) => setPaymentData({ ...paymentData, paid_amount: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-bold focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Payment Method <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={paymentData.payment_method}
+                onChange={(e) => setPaymentData({ ...paymentData, payment_method: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              >
+                <option value="bank_transfer">Direct Bank Transfer / NEFT / RTGS</option>
+                <option value="upi">UPI / QR Code</option>
+                <option value="credit_card">Corporate Credit Card</option>
+                <option value="cheque">Cheque</option>
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Payment Method *
-                </label>
-                <select
-                  value={paymentData.payment_method}
-                  onChange={(e) => setPaymentData({ ...paymentData, payment_method: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                >
-                  <option value="bank_transfer">Direct Bank Transfer / NEFT / RTGS</option>
-                  <option value="upi">UPI / QR Code</option>
-                  <option value="credit_card">Corporate Credit Card</option>
-                  <option value="cheque">Cheque</option>
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Transaction Notes / Reference
+              </label>
+              <input
+                type="text"
+                value={paymentData.notes}
+                onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                placeholder="e.g., UTR / Reference ID"
+              />
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Transaction Notes / Reference
-                </label>
-                <input
-                  type="text"
-                  value={paymentData.notes}
-                  onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                  placeholder="e.g., UTR / Reference ID"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex justify-end gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setIsMarkPaidOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" isLoading={paying} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                  Confirm Payment
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
+            <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 flex justify-end gap-2.5">
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsMarkPaidOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" isLoading={paying} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                Confirm Payment
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

@@ -75,5 +75,20 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Client::class, 'client_id');
     }
+
+    public function managedProjects(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Project::class, 'pm_id');
+    }
+
+    public function assignedTasks(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Task::class, 'assignee_id');
+    }
+
+    public function timeEntries(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TimeEntry::class, 'user_id');
+    }
 }
 

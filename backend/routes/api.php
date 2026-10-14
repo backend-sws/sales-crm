@@ -14,8 +14,13 @@ use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\ProjectController;
+use App\Http\Controllers\Api\V1\ProjectTaskController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ScopeGovernanceController;
 use App\Http\Controllers\Api\V1\ServiceTrackController;
+use App\Http\Controllers\Api\V1\SprintController;
+use App\Http\Controllers\Api\V1\TimeTrackingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -148,6 +153,54 @@ Route::prefix('v1')->group(function () {
         Route::get('/clients/{id}/documents', [DocumentController::class, 'index']);
         Route::post('/clients/{id}/documents', [DocumentController::class, 'store']);
         Route::post('/documents/{id}/sign', [DocumentController::class, 'sign']);
+
+        // Projects, Milestones & Budgets (Phase 4)
+        Route::get('/projects', [ProjectController::class, 'index']);
+        Route::post('/projects', [ProjectController::class, 'store']);
+        Route::get('/projects/{id}', [ProjectController::class, 'show']);
+        Route::patch('/projects/{id}', [ProjectController::class, 'update']);
+        Route::get('/projects/{id}/budget', [ProjectController::class, 'budget']);
+        Route::get('/projects/{id}/capacity', [ProjectController::class, 'capacity']);
+        Route::post('/projects/{id}/milestones', [ProjectController::class, 'storeMilestone']);
+        Route::post('/milestones/{milestoneId}/invoice', [ProjectController::class, 'invoiceMilestone']);
+
+        // Tasks, Kanban & Dependencies (Phase 4)
+        Route::get('/projects/{projectId}/tasks', [ProjectTaskController::class, 'index']);
+        Route::post('/projects/{projectId}/tasks', [ProjectTaskController::class, 'store']);
+        Route::patch('/tasks/{id}', [ProjectTaskController::class, 'update']);
+        Route::patch('/tasks/{id}/status', [ProjectTaskController::class, 'updateStatus']);
+        Route::post('/tasks/{id}/dependencies', [ProjectTaskController::class, 'addDependency']);
+        Route::delete('/tasks/{id}/dependencies/{dependsOnTaskId}', [ProjectTaskController::class, 'removeDependency']);
+        Route::post('/tasks/{id}/proof', [ProjectTaskController::class, 'attachProof']);
+        Route::post('/tasks/{id}/client-decision', [ProjectTaskController::class, 'clientDecision']);
+        Route::get('/projects/{projectId}/gantt', [ProjectTaskController::class, 'gantt']);
+
+        // Time Tracking & Worklogs (Phase 4)
+        Route::get('/time-entries/active', [TimeTrackingController::class, 'activeTimer']);
+        Route::post('/tasks/{taskId}/timer/start', [TimeTrackingController::class, 'startTimer']);
+        Route::post('/time-entries/{id}/stop', [TimeTrackingController::class, 'stopTimer']);
+        Route::post('/tasks/{taskId}/time-entries', [TimeTrackingController::class, 'store']);
+        Route::get('/projects/{projectId}/worklogs', [TimeTrackingController::class, 'projectWorklogs']);
+
+        // Sprints & Burndown (Phase 4)
+        Route::get('/projects/{projectId}/sprints', [SprintController::class, 'index']);
+        Route::post('/projects/{projectId}/sprints', [SprintController::class, 'store']);
+        Route::post('/sprints/{id}/tasks', [SprintController::class, 'assignTasks']);
+        Route::get('/sprints/{id}/burndown', [SprintController::class, 'burndown']);
+        Route::patch('/sprints/{id}/close', [SprintController::class, 'close']);
+
+        // Scope Governance, Diff & Change Requests (Phase 4)
+        Route::get('/projects/{projectId}/scope-versions', [ScopeGovernanceController::class, 'scopeVersions']);
+        Route::post('/projects/{projectId}/scope-versions', [ScopeGovernanceController::class, 'storeScopeVersion']);
+        Route::post('/scope-versions/{id}/approve', [ScopeGovernanceController::class, 'approveScope']);
+        Route::get('/scope-versions/{v1}/diff/{v2}', [ScopeGovernanceController::class, 'diff']);
+        Route::get('/projects/{projectId}/change-requests', [ScopeGovernanceController::class, 'changeRequests']);
+        Route::post('/projects/{projectId}/change-requests', [ScopeGovernanceController::class, 'storeChangeRequest']);
+        Route::patch('/change-requests/{id}/decision', [ScopeGovernanceController::class, 'decideChangeRequest']);
+        Route::get('/projects/{projectId}/meetings', [ScopeGovernanceController::class, 'meetings']);
+        Route::post('/projects/{projectId}/meetings', [ScopeGovernanceController::class, 'storeMeeting']);
+        Route::post('/meetings/{id}/confirm', [ScopeGovernanceController::class, 'confirmMoM']);
+        Route::post('/meeting-action-items/{id}/convert', [ScopeGovernanceController::class, 'convertActionItem']);
     });
 });
 

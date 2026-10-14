@@ -17,6 +17,8 @@ const AdminAuditLogsPage = lazy(() => import("./pages/AdminAuditLogsPage"));
 const ClientsPage = lazy(() => import("./pages/ClientsPage"));
 const ClientDetailPage = lazy(() => import("./pages/ClientDetailPage"));
 const ClientPortalPage = lazy(() => import("./pages/ClientPortalPage"));
+const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
+const ProjectDetailPage = lazy(() => import("./pages/ProjectDetailPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -78,6 +80,8 @@ export default function App() {
             <Route path="/clients" element={<StaffOnlyRoute><ClientsPage /></StaffOnlyRoute>} />
             <Route path="/clients/:id" element={<StaffOnlyRoute><ClientDetailPage /></StaffOnlyRoute>} />
             <Route path="/clients/:id/portal" element={<StaffOnlyRoute><ClientPortalPage /></StaffOnlyRoute>} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/:id" element={<ProjectDetailPage />} />
             <Route path="/portal" element={<ClientPortalPage />} />
             <Route path="/client/dashboard" element={<Navigate to="/portal" replace />} />
             <Route path="/admin/users" element={<StaffOnlyRoute><AdminUsersPage /></StaffOnlyRoute>} />

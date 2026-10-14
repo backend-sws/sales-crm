@@ -22,6 +22,7 @@ import { ModeToggle } from "@/components/ui/mode-toggle";
 import { followUpsApi } from "@/api/followUps.api";
 import { queryKeys } from "@/constants/queryKeys";
 import { NotificationAlertsDropdown } from "./NotificationAlertsDropdown";
+import { ActiveTimerWidget } from "@/features/projects/components/ActiveTimerWidget";
 
 function ThemeCustomizer() {
   const [isOpen, setIsOpen] = useState(false);
@@ -277,6 +278,7 @@ export function Header({ className = "" }: { className?: string }) {
 
   const getBreadcrumbTitle = () => {
     if (location.pathname.startsWith("/portal")) return "Client Workspace";
+    if (location.pathname.startsWith("/projects")) return "Project Delivery & Sprints";
     if (location.pathname.startsWith("/clients")) return "Clients & Retainers";
     if (location.pathname.startsWith("/follow-ups")) return "Follow-Up Action Queue";
     if (location.pathname.startsWith("/leads/analytics")) return "Pipeline & Anti-Loss Analytics";
@@ -325,15 +327,18 @@ export function Header({ className = "" }: { className?: string }) {
           >
             <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
             <span>Quick search leads, deals...</span>
-            <kbd className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-500 ml-2">
+            <kbd className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white dark:bg-white/10 border border-slate-200 dark:border-slate-white/10 text-slate-500 ml-2">
               ⌘K
             </kbd>
           </button>
         </div>
       )}
 
-      {/* Right: Anti-loss alert dropdown, Theme customizer, ModeToggle, Fullscreen, Profile */}
+      {/* Right: Anti-loss alert dropdown, Live Timer Widget, Theme customizer, ModeToggle, Fullscreen, Profile */}
       <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Live Stopwatch Timer Widget */}
+        {!isClientUser && <ActiveTimerWidget />}
+
         {/* Anti-Loss Live Alerts & Notifications */}
         {!isClientUser && <NotificationAlertsDropdown />}
 

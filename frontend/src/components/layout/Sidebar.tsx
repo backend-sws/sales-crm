@@ -15,6 +15,7 @@ import {
   X,
   Users,
   Briefcase,
+  FolderKanban,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -37,6 +38,7 @@ export const crmMenuGroups = [
     title: "CLIENT SUCCESS & SERVICES",
     items: [
       { name: "Clients & Retainers", href: "/clients", icon: Briefcase },
+      { name: "Projects & Sprints", href: "/projects", icon: FolderKanban },
     ],
   },
   {
@@ -54,6 +56,7 @@ export const clientMenuGroups = [
     title: "MY CLIENT WORKSPACE",
     items: [
       { name: "Portal Overview", href: "/portal", icon: LayoutDashboard },
+      { name: "My Projects", href: "/projects", icon: FolderKanban },
     ],
   },
 ];

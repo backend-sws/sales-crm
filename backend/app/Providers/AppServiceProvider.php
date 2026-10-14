@@ -34,6 +34,11 @@ class AppServiceProvider extends ServiceProvider
         \App\Contracts\Services\RetainerBillingServiceInterface::class => \App\Services\RetainerBillingService::class,
         \App\Contracts\Services\ClientHealthScoreServiceInterface::class => \App\Services\ClientHealthScoreService::class,
         \App\Contracts\Services\ESignServiceInterface::class => \App\Services\ESignService::class,
+        \App\Contracts\Services\ProjectServiceInterface::class => \App\Services\ProjectService::class,
+        \App\Contracts\Services\ProjectTaskServiceInterface::class => \App\Services\ProjectTaskService::class,
+        \App\Contracts\Services\TimeTrackingServiceInterface::class => \App\Services\TimeTrackingService::class,
+        \App\Contracts\Services\SprintServiceInterface::class => \App\Services\SprintService::class,
+        \App\Contracts\Services\ScopeGovernanceServiceInterface::class => \App\Services\ScopeGovernanceService::class,
     ];
 
     /**
