@@ -201,19 +201,19 @@ export function ProjectAiInsightsPanel({
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="p-5 bg-gradient-to-r from-primary-950/60 via-slate-900 to-slate-950 border border-primary-500/20 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+      <div className="p-5 bg-white border border-slate-200/90 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-primary-400 shadow-inner">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+          <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
+            <Sparkles className="w-5 h-5 text-indigo-600 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-slate-100 text-sm">Google Gemini Generative AI Assistant</h3>
-              <span className="text-[10px] bg-primary-500/20 text-primary-300 border border-primary-500/30 px-2 py-0.5 rounded-full font-medium">
+              <h3 className="font-bold text-slate-900 text-sm">Google Gemini Generative AI Assistant</h3>
+              <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full font-semibold">
                 Gemini 1.5 Flash
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Advisory intelligence for scope architecture, sprint health forecasting, and meeting synthesis.
             </p>
           </div>
@@ -222,40 +222,40 @@ export function ProjectAiInsightsPanel({
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setShowKeyModal(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition shadow-sm"
+            className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition shadow-xs"
           >
-            <Key className="w-3.5 h-3.5 text-amber-400" />
+            <Key className="w-3.5 h-3.5 text-amber-500" />
             {isKeyConfigured ? 'Gemini Key Configured' : 'Configure Free Gemini Key'}
           </button>
 
           {/* Tab Switcher */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button
               onClick={() => setActiveTab('breakdown')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                 activeTab === 'breakdown'
-                  ? 'bg-primary-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/60'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Task Breakdown
             </button>
             <button
               onClick={() => setActiveTab('sprint_risk')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                 activeTab === 'sprint_risk'
-                  ? 'bg-primary-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/60'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Sprint Health
             </button>
             <button
               onClick={() => setActiveTab('mom_summary')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                 activeTab === 'mom_summary'
-                  ? 'bg-primary-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/60'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               MoM Summarizer
@@ -267,12 +267,12 @@ export function ProjectAiInsightsPanel({
       {/* --- TAB 1: TASK BREAKDOWN GENERATOR --- */}
       {activeTab === 'breakdown' && (
         <div className="space-y-5">
-          <div className="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl">
-            <h4 className="font-semibold text-slate-100 text-sm mb-1 flex items-center gap-2">
-              <ListTodo className="w-4 h-4 text-primary-400" />
+          <div className="p-5 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
+            <h4 className="font-bold text-slate-900 text-sm mb-1 flex items-center gap-2">
+              <ListTodo className="w-4 h-4 text-indigo-600" />
               Automated Technical Task Breakdown
             </h4>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-xs text-slate-500 mb-4">
               Enter a high-level requirement or client change request. Gemini AI will architect the technical subtasks, story points, and estimated hours.
             </p>
 
@@ -282,16 +282,16 @@ export function ProjectAiInsightsPanel({
                 value={requirementText}
                 onChange={(e) => setRequirementText(e.target.value)}
                 placeholder="Example: Implement live GPS fleet tracking with WebSockets, battery telemetry, and offline queueing..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500 leading-relaxed"
+                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 leading-relaxed font-normal"
               />
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-slate-500">
+                <span className="text-[11px] text-slate-400">
                   Powered by Google Gemini 1.5 Flash (free tier) with zero-choke fallback.
                 </span>
                 <button
                   type="submit"
                   disabled={generatingTasks || !requirementText.trim()}
-                  className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-md shadow-primary-900/30 disabled:opacity-50 transition"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 disabled:opacity-50 transition"
                 >
                   {generatingTasks ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -306,13 +306,13 @@ export function ProjectAiInsightsPanel({
 
           {/* Breakdown Results */}
           {breakdownResult && (
-            <div className="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-4">
+            <div className="p-5 bg-white border border-slate-200/90 rounded-2xl space-y-4 shadow-xs">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-semibold text-slate-100 text-sm">Suggested Subtasks</h4>
-                  <p className="text-xs text-slate-400">{breakdownResult.powered_by}</p>
+                  <h4 className="font-bold text-slate-900 text-sm">Suggested Subtasks</h4>
+                  <p className="text-xs text-slate-500">{breakdownResult.powered_by}</p>
                 </div>
-                <span className="text-xs text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded">
+                <span className="text-xs text-emerald-700 font-mono font-semibold bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
                   {breakdownResult.suggested_tasks.length} tasks architected
                 </span>
               </div>
@@ -321,28 +321,28 @@ export function ProjectAiInsightsPanel({
                 {breakdownResult.suggested_tasks.map((task, idx) => (
                   <div
                     key={idx}
-                    className="p-4 bg-slate-950 border border-slate-800/80 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-slate-700 transition"
+                    className="p-4 bg-slate-50/70 hover:bg-white border border-slate-200/80 hover:border-slate-300 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 transition shadow-2xs"
                   >
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-slate-200 text-xs">{task.title}</span>
-                        <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded font-mono uppercase">
+                        <span className="font-bold text-slate-900 text-xs">{task.title}</span>
+                        <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1.5 py-0.2 rounded font-mono font-semibold uppercase">
                           {task.complexity}
                         </span>
-                        <span className="text-[10px] bg-primary-500/10 text-primary-300 border border-primary-500/20 px-1.5 py-0.2 rounded font-mono">
+                        <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.2 rounded font-mono font-semibold">
                           {task.story_points} SP
                         </span>
-                        <span className="text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20 px-1.5 py-0.2 rounded font-mono">
+                        <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded font-mono font-semibold">
                           {task.estimated_hours}h
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1">{task.description}</p>
+                      <p className="text-xs text-slate-600 mt-1">{task.description}</p>
                     </div>
 
                     <button
                       onClick={() => handleCreateTaskFromAi(task, idx)}
                       disabled={addingTaskId === idx}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs flex items-center gap-1.5 shrink-0 transition"
+                      className="px-3.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-semibold text-xs flex items-center gap-1.5 shrink-0 transition shadow-2xs"
                     >
                       {addingTaskId === idx ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -362,12 +362,12 @@ export function ProjectAiInsightsPanel({
       {/* --- TAB 2: SPRINT RISK PREDICTOR --- */}
       {activeTab === 'sprint_risk' && (
         <div className="space-y-5">
-          <div className="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl">
-            <h4 className="font-semibold text-slate-100 text-sm mb-1 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
+          <div className="p-5 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
+            <h4 className="font-bold text-slate-900 text-sm mb-1 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
               Sprint Delivery Risk & Velocity Predictor
             </h4>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-xs text-slate-500 mb-4">
               AI analyzes task velocity, dependencies, rework rates, and remaining hours to forecast delivery delays before they occur.
             </p>
 
@@ -375,7 +375,7 @@ export function ProjectAiInsightsPanel({
               <select
                 value={selectedSprintId}
                 onChange={(e) => setSelectedSprintId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full md:w-80 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-primary-500"
+                className="w-full md:w-80 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
               >
                 <option value="">Select a sprint...</option>
                 {sprints.map((s) => (
@@ -388,7 +388,7 @@ export function ProjectAiInsightsPanel({
               <button
                 onClick={handleAnalyzeSprint}
                 disabled={analyzingSprint || !selectedSprintId}
-                className="w-full md:w-auto px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-medium text-xs flex items-center justify-center gap-1.5 shadow-md shadow-primary-900/30 disabled:opacity-50 transition"
+                className="w-full md:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-600/20 disabled:opacity-50 transition"
               >
                 {analyzingSprint ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -401,52 +401,52 @@ export function ProjectAiInsightsPanel({
           </div>
 
           {sprintRiskResult && (
-            <div className="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-4">
+            <div className="p-5 bg-white border border-slate-200/90 rounded-2xl space-y-4 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                       sprintRiskResult.risk_level === 'Low'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         : sprintRiskResult.risk_level === 'Medium'
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-rose-50 text-rose-700 border border-rose-200'
                     }`}
                   >
                     Risk Level: {sprintRiskResult.risk_level}
                   </span>
-                  <span className="text-xs text-slate-400">{sprintRiskResult.powered_by}</span>
+                  <span className="text-xs text-slate-500">{sprintRiskResult.powered_by}</span>
                 </div>
 
-                <div className="flex items-center gap-3 text-xs text-slate-300 font-mono">
-                  <span>Completion: <b>{sprintRiskResult.metrics.completion_rate}%</b></span>
-                  <span>Blocked: <b className="text-rose-400">{sprintRiskResult.metrics.blocked_tasks}</b></span>
+                <div className="flex items-center gap-3 text-xs text-slate-600 font-mono font-medium">
+                  <span>Completion: <b className="text-slate-900">{sprintRiskResult.metrics.completion_rate}%</b></span>
+                  <span>Blocked: <b className="text-rose-600">{sprintRiskResult.metrics.blocked_tasks}</b></span>
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-950 border border-slate-800/80 rounded-xl">
-                <p className="text-xs font-medium text-slate-200 leading-relaxed">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <p className="text-xs font-medium text-slate-800 leading-relaxed">
                   {sprintRiskResult.prediction}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-950/80 border border-slate-800/80 rounded-xl">
-                  <h5 className="font-semibold text-rose-400 text-xs mb-2 flex items-center gap-1.5">
+                <div className="p-4 bg-rose-50/40 border border-rose-200/70 rounded-xl">
+                  <h5 className="font-bold text-rose-700 text-xs mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" /> Risk Factors
                   </h5>
-                  <ul className="space-y-1.5 text-xs text-slate-300 list-disc list-inside">
+                  <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
                     {sprintRiskResult.risk_factors.map((f, i) => (
                       <li key={i}>{f}</li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="p-4 bg-slate-950/80 border border-slate-800/80 rounded-xl">
-                  <h5 className="font-semibold text-emerald-400 text-xs mb-2 flex items-center gap-1.5">
+                <div className="p-4 bg-emerald-50/40 border border-emerald-200/70 rounded-xl">
+                  <h5 className="font-bold text-emerald-700 text-xs mb-2 flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Recommendations
                   </h5>
-                  <ul className="space-y-1.5 text-xs text-slate-300 list-disc list-inside">
+                  <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
                     {sprintRiskResult.recommendations.map((r, i) => (
                       <li key={i}>{r}</li>
                     ))}
@@ -461,12 +461,12 @@ export function ProjectAiInsightsPanel({
       {/* --- TAB 3: MoM MEETING SUMMARIZER --- */}
       {activeTab === 'mom_summary' && (
         <div className="space-y-5">
-          <div className="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl">
-            <h4 className="font-semibold text-slate-100 text-sm mb-1 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-primary-400" />
+          <div className="p-5 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
+            <h4 className="font-bold text-slate-900 text-sm mb-1 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-indigo-600" />
               Meeting Minutes (MoM) Auto-Summarizer
             </h4>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-xs text-slate-500 mb-4">
               Paste unstructured meeting notes or transcript. Gemini AI will auto-extract Executive Summary, Key Decisions, and Action Items.
             </p>
 
@@ -476,13 +476,13 @@ export function ProjectAiInsightsPanel({
                 value={rawNotesText}
                 onChange={(e) => setRawNotesText(e.target.value)}
                 placeholder="Paste client sync notes, decisions, or raw transcript..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500 leading-relaxed font-mono"
+                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 leading-relaxed font-mono font-normal"
               />
               <div className="flex items-center justify-end">
                 <button
                   type="submit"
                   disabled={summarizingMom || !rawNotesText.trim()}
-                  className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-md shadow-primary-900/30 disabled:opacity-50 transition"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 disabled:opacity-50 transition"
                 >
                   {summarizingMom ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -496,37 +496,37 @@ export function ProjectAiInsightsPanel({
           </div>
 
           {momSummaryResult && (
-            <div className="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-4">
+            <div className="p-5 bg-white border border-slate-200/90 rounded-2xl space-y-4 shadow-xs">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-semibold text-slate-100 text-sm">Structured MoM Synthesis</h4>
-                  <p className="text-xs text-slate-400">{momSummaryResult.powered_by}</p>
+                  <h4 className="font-bold text-slate-900 text-sm">Structured MoM Synthesis</h4>
+                  <p className="text-xs text-slate-500">{momSummaryResult.powered_by}</p>
                 </div>
                 <button
                   onClick={copyMomToClipboard}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition"
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition"
                 >
-                  {copiedSummary ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedSummary ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                   {copiedSummary ? 'Copied' : 'Copy All'}
                 </button>
               </div>
 
               {/* Executive Summary */}
-              <div className="p-4 bg-slate-950 border border-slate-800/80 rounded-xl">
-                <h5 className="font-semibold text-slate-300 text-xs uppercase tracking-wider mb-1.5">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <h5 className="font-bold text-slate-500 text-xs uppercase tracking-wider mb-1.5">
                   Executive Summary
                 </h5>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-slate-800 leading-relaxed font-medium">
                   {momSummaryResult.executive_summary}
                 </p>
               </div>
 
               {/* Key Decisions */}
-              <div className="p-4 bg-slate-950 border border-slate-800/80 rounded-xl">
-                <h5 className="font-semibold text-emerald-400 text-xs uppercase tracking-wider mb-2">
+              <div className="p-4 bg-emerald-50/40 border border-emerald-200/70 rounded-xl">
+                <h5 className="font-bold text-emerald-700 text-xs uppercase tracking-wider mb-2">
                   Key Decisions
                 </h5>
-                <ul className="space-y-1.5 text-xs text-slate-200 list-disc list-inside">
+                <ul className="space-y-1.5 text-xs text-slate-800 list-disc list-inside font-medium">
                   {momSummaryResult.key_decisions.map((d, i) => (
                     <li key={i}>{d}</li>
                   ))}
@@ -534,25 +534,25 @@ export function ProjectAiInsightsPanel({
               </div>
 
               {/* Action Items */}
-              <div className="p-4 bg-slate-950 border border-slate-800/80 rounded-xl">
-                <h5 className="font-semibold text-primary-400 text-xs uppercase tracking-wider mb-2">
+              <div className="p-4 bg-indigo-50/20 border border-indigo-200/60 rounded-xl">
+                <h5 className="font-bold text-indigo-700 text-xs uppercase tracking-wider mb-2">
                   Action Items
                 </h5>
                 <div className="space-y-2">
                   {momSummaryResult.action_items.map((action, i) => (
                     <div
                       key={i}
-                      className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between text-xs"
+                      className="p-3 rounded-lg bg-white border border-slate-200 flex items-center justify-between text-xs shadow-2xs"
                     >
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-primary-400 shrink-0" />
-                        <span className="text-slate-200 font-medium">{action.title}</span>
+                        <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <span className="text-slate-800 font-semibold">{action.title}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
+                        <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono font-semibold">
                           @{action.suggested_assignee}
                         </span>
-                        <span className="text-[10px] bg-primary-500/10 text-primary-300 border border-primary-500/20 px-1.5 py-0.5 rounded font-mono uppercase">
+                        <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-mono font-semibold uppercase">
                           {action.priority}
                         </span>
                       </div>
@@ -567,16 +567,16 @@ export function ProjectAiInsightsPanel({
 
       {/* --- CONFIGURE GEMINI API KEY MODAL --- */}
       {showKeyModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Key className="w-4 h-4 text-amber-400" />
-                <h4 className="font-semibold text-slate-100 text-sm">Configure Google Gemini AI Key</h4>
+                <Key className="w-4 h-4 text-amber-500" />
+                <h4 className="font-bold text-slate-900 text-sm">Configure Google Gemini AI Key</h4>
               </div>
               <button
                 onClick={() => setShowKeyModal(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-slate-400 hover:text-slate-700 p-1"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -584,7 +584,7 @@ export function ProjectAiInsightsPanel({
 
             <form onSubmit={handleSaveGeminiKey} className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Google Gemini API Key (Free Tier)
                 </label>
                 <input
@@ -593,15 +593,15 @@ export function ProjectAiInsightsPanel({
                   value={geminiApiKey}
                   onChange={(e) => setGeminiApiKey(e.target.value)}
                   placeholder="AIzaSy..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-primary-500 font-mono"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono"
                 />
                 <div className="flex items-center justify-between mt-1 text-[11px]">
-                  <span className="text-slate-500">Free tier quota: 15 RPM / 1M TPM</span>
+                  <span className="text-slate-400">Free tier quota: 15 RPM / 1M TPM</span>
                   <a
                     href="https://aistudio.google.com/app/apikey"
                     target="_blank"
                     rel="noreferrer"
-                    className="text-primary-400 hover:underline flex items-center gap-1"
+                    className="text-indigo-600 font-semibold hover:underline flex items-center gap-1"
                   >
                     Get Free Key from Google AI Studio <ExternalLink className="w-3 h-3" />
                   </a>
@@ -609,11 +609,11 @@ export function ProjectAiInsightsPanel({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Gemini Model</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Gemini Model</label>
                 <select
                   value={geminiModel}
                   onChange={(e) => setGeminiModel(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-primary-500"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
                 >
                   <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recommended - Fastest & Free)</option>
                   <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
@@ -621,7 +621,7 @@ export function ProjectAiInsightsPanel({
                 </select>
               </div>
 
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
                 <p>• Your key is securely stored in <code>app_settings</code> table.</p>
                 <p>• If offline or quota exhausted, the system automatically falls back to analytical heuristics.</p>
               </div>
@@ -630,14 +630,14 @@ export function ProjectAiInsightsPanel({
                 <button
                   type="button"
                   onClick={() => setShowKeyModal(false)}
-                  className="px-3 py-2 text-xs text-slate-400 hover:text-white"
+                  className="px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingKey}
-                  className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-md shadow-primary-900/30 disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 disabled:opacity-50"
                 >
                   {savingKey ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                   Test Connection & Save Key

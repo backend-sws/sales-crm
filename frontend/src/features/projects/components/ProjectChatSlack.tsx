@@ -261,22 +261,22 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-[620px] max-h-[calc(100vh-230px)] min-h-[500px] bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+    <div className="flex flex-col md:flex-row h-[620px] max-h-[calc(100vh-230px)] min-h-[500px] bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
       {/* --- SLACK SIDEBAR (CHANNELS) --- */}
-      <div className="w-full md:w-64 bg-slate-900 border-r border-slate-800/80 flex flex-col">
+      <div className="w-full md:w-64 bg-slate-50/90 border-r border-slate-200 flex flex-col">
         {/* Workspace Header */}
-        <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-200/80 bg-white/60 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-slate-100 text-sm tracking-tight flex items-center gap-1.5">
+            <h3 className="font-bold text-slate-800 text-sm tracking-tight flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               {projectTitle}
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Project Workspace Chat</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Project Workspace Chat</p>
           </div>
           <button
             onClick={loadChannels}
             title="Refresh channels"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
@@ -284,13 +284,13 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
 
         {/* Channels List */}
         <div className="p-3 flex-1 overflow-y-auto space-y-1">
-          <div className="px-2 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+          <div className="px-2 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             Channels
           </div>
 
           {loadingChannels ? (
-            <div className="p-4 flex items-center justify-center text-slate-500 text-xs">
-              <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading channels...
+            <div className="p-4 flex items-center justify-center text-slate-400 text-xs">
+              <Loader2 className="w-4 h-4 animate-spin mr-2 text-indigo-600" /> Loading channels...
             </div>
           ) : (
             channels.map((chan) => {
@@ -299,23 +299,23 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
                 <button
                   key={chan.id}
                   onClick={() => setActiveChannel(chan)}
-                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition ${
+                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition ${
                     isActive
-                      ? 'bg-primary-600 text-white shadow-md shadow-primary-900/40'
-                      : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs'
+                      : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
                     {chan.is_internal ? (
-                      <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                     ) : (
-                      <Hash className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                      <Hash className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     )}
                     <span className="truncate">{chan.name}</span>
                   </div>
 
                   {chan.is_internal && (
-                    <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded uppercase font-semibold">
+                    <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded uppercase font-bold">
                       Staff
                     </span>
                   )}
@@ -326,36 +326,36 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
         </div>
 
         {/* Current User Pill */}
-        <div className="p-3 border-t border-slate-800/80 bg-slate-900/60 flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-primary-600/20 border border-primary-500/30 text-primary-400 font-semibold flex items-center justify-center text-xs">
+        <div className="p-3 border-t border-slate-200 bg-white flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center justify-center text-xs shadow-2xs">
             {user?.name?.charAt(0) || 'U'}
           </div>
           <div className="truncate text-xs">
-            <p className="font-medium text-slate-200 truncate">{user?.name}</p>
+            <p className="font-semibold text-slate-800 truncate">{user?.name}</p>
             <p className="text-[10px] text-slate-400 capitalize">{user?.roles?.[0] || 'Member'}</p>
           </div>
         </div>
       </div>
 
       {/* --- MAIN CHAT PANE --- */}
-      <div className="flex-1 flex flex-col bg-slate-950">
+      <div className="flex-1 flex flex-col bg-white">
         {/* Channel Top Header */}
-        <div className="h-14 px-5 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/70 backdrop-blur">
-          <div className="flex items-center gap-2">
+        <div className="h-14 px-5 border-b border-slate-200 flex items-center justify-between bg-white/80 backdrop-blur-xs">
+          <div className="flex items-center gap-2.5">
             {activeChannel?.is_internal ? (
-              <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
+              <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
                 <Lock className="w-4 h-4" />
               </div>
             ) : (
-              <div className="p-1.5 rounded-lg bg-slate-800 text-slate-300">
+              <div className="p-1.5 rounded-lg bg-slate-100 text-slate-600">
                 <Hash className="w-4 h-4" />
               </div>
             )}
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="font-semibold text-slate-100 text-sm">{activeChannel?.name || 'Channel'}</h4>
+                <h4 className="font-bold text-slate-900 text-sm">{activeChannel?.name || 'Channel'}</h4>
                 {activeChannel?.is_internal && (
-                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-medium">
                     Internal Notes (Hidden from Client)
                   </span>
                 )}
@@ -367,7 +367,7 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
           <div className="flex items-center gap-2">
             <button
               onClick={() => activeChannel && loadMessages(activeChannel.id)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
               title="Refresh messages"
             >
               <RefreshCw className="w-4 h-4" />
@@ -376,18 +376,18 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
         </div>
 
         {/* Message Feed */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-white">
           {loadingMessages ? (
-            <div className="h-full flex items-center justify-center text-slate-500 text-xs">
-              <Loader2 className="w-5 h-5 animate-spin mr-2 text-primary-500" /> Loading channel messages...
+            <div className="h-full flex items-center justify-center text-slate-400 text-xs">
+              <Loader2 className="w-5 h-5 animate-spin mr-2 text-indigo-600" /> Loading channel messages...
             </div>
           ) : messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
-              <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mb-3 text-slate-400">
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center mb-3 text-slate-500">
                 <Hash className="w-6 h-6" />
               </div>
-              <p className="font-medium text-slate-300 text-sm">Welcome to #{activeChannel?.name}!</p>
-              <p className="text-slate-500 text-xs mt-1">
+              <p className="font-bold text-slate-800 text-sm">Welcome to #{activeChannel?.name}!</p>
+              <p className="text-slate-400 text-xs mt-1 text-center max-w-sm">
                 {activeChannel?.is_internal
                   ? 'This channel is strictly for internal staff discussions, technical notes, and developer sync.'
                   : 'This is the start of the project discussion channel with client and team.'}
@@ -396,25 +396,24 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
           ) : (
             messages.map((msg) => {
               const isHovered = hoveredMessageId === msg.id;
-              const isMe = msg.user_id === user?.id;
 
               return (
                 <div
                   key={msg.id}
                   onMouseEnter={() => setHoveredMessageId(msg.id)}
                   onMouseLeave={() => setHoveredMessageId(null)}
-                  className={`group relative flex gap-3 p-2 rounded-xl transition ${
-                    isHovered ? 'bg-slate-900/60' : 'hover:bg-slate-900/30'
+                  className={`group relative flex gap-3 p-2.5 rounded-xl transition ${
+                    isHovered ? 'bg-slate-50/90' : 'hover:bg-slate-50/60'
                   }`}
                 >
                   {/* Quick Reaction Bar on Hover (Slack-like) */}
                   {isHovered && (
-                    <div className="absolute right-3 -top-3.5 z-10 bg-slate-800 border border-slate-700/80 rounded-xl px-1.5 py-0.5 shadow-xl flex items-center gap-1">
+                    <div className="absolute right-3 -top-3.5 z-10 bg-white border border-slate-200 rounded-xl px-1.5 py-0.5 shadow-md flex items-center gap-1">
                       {QUICK_EMOJIS.map((emoji) => (
                         <button
                           key={emoji}
                           onClick={() => handleToggleReaction(msg.id, emoji)}
-                          className="hover:scale-125 hover:bg-slate-700/70 p-1 rounded transition text-xs"
+                          className="hover:scale-125 hover:bg-slate-100 p-1 rounded transition text-xs"
                           title={`React with ${emoji}`}
                         >
                           {emoji}
@@ -424,31 +423,31 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
                   )}
 
                   {/* User Avatar */}
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-800 to-slate-700 border border-slate-700 flex items-center justify-center text-slate-200 font-semibold text-xs shrink-0 shadow-sm">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                     {msg.user?.name?.charAt(0) || 'U'}
                   </div>
 
                   {/* Message Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-200 text-xs">{msg.user?.name}</span>
+                      <span className="font-bold text-slate-900 text-xs">{msg.user?.name}</span>
                       {msg.is_internal && (
-                        <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded font-mono">
+                        <span className="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded font-mono font-semibold">
                           INTERNAL
                         </span>
                       )}
-                      <span className="text-[10px] text-slate-500">{formatTime(msg.created_at)}</span>
+                      <span className="text-[10px] text-slate-400">{formatTime(msg.created_at)}</span>
                     </div>
 
                     {/* Text Body */}
-                    <p className="text-slate-300 text-xs mt-1 leading-relaxed whitespace-pre-wrap select-text">
+                    <p className="text-slate-700 text-xs mt-1 leading-relaxed whitespace-pre-wrap select-text">
                       {msg.content}
                     </p>
 
                     {/* Code Snippet Box (Slack Code Block) */}
                     {msg.code_snippet && (
-                      <div className="mt-2.5 rounded-xl border border-slate-800 bg-slate-900/90 overflow-hidden shadow-inner">
-                        <div className="px-3 py-1.5 bg-slate-950/80 border-b border-slate-800/80 flex items-center justify-between">
+                      <div className="mt-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-100 overflow-hidden shadow-xs">
+                        <div className="px-3 py-1.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
                           <span className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider">
                             {msg.code_language || 'Code'}
                           </span>
@@ -486,7 +485,7 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
                               <div
                                 key={att.id}
                                 onClick={() => setActiveLightboxImg(att.file_url)}
-                                className="group/img relative cursor-pointer rounded-xl overflow-hidden border border-slate-800 hover:border-primary-500/60 transition shadow-md"
+                                className="group/img relative cursor-pointer rounded-xl overflow-hidden border border-slate-200 hover:border-indigo-400 transition shadow-2xs"
                               >
                                 <img
                                   src={att.file_url}
@@ -506,14 +505,14 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
                               href={att.file_url}
                               target="_blank"
                               rel="noreferrer"
-                              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-200 transition text-xs shadow-sm"
+                              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-800 transition text-xs shadow-2xs"
                             >
-                              <FileText className="w-4 h-4 text-primary-400 shrink-0" />
+                              <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
                               <div className="truncate max-w-[200px]">
-                                <p className="font-medium truncate">{att.file_name}</p>
+                                <p className="font-semibold truncate">{att.file_name}</p>
                                 <p className="text-[10px] text-slate-400">{formatBytes(att.file_size_bytes)}</p>
                               </div>
-                              <Download className="w-3.5 h-3.5 text-slate-400 hover:text-white shrink-0 ml-1" />
+                              <Download className="w-3.5 h-3.5 text-slate-400 hover:text-slate-700 shrink-0 ml-1" />
                             </a>
                           );
                         })}
@@ -535,10 +534,10 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
                             <button
                               key={emoji}
                               onClick={() => handleToggleReaction(msg.id, emoji)}
-                              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition ${
+                              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition ${
                                 hasMe
-                                  ? 'bg-primary-500/20 border-primary-500/50 text-primary-300'
-                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                                  ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-2xs'
+                                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                               }`}
                             >
                               <span>{emoji}</span>
@@ -558,21 +557,21 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
 
         {/* --- PENDING ATTACHMENTS TRAY --- */}
         {pendingAttachments.length > 0 && (
-          <div className="px-5 py-2 border-t border-slate-800/80 bg-slate-900/50 flex flex-wrap gap-2">
+          <div className="px-5 py-2 border-t border-slate-200 bg-slate-50 flex flex-wrap gap-2">
             {pendingAttachments.map((att, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-200"
+                className="flex items-center gap-2 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 shadow-2xs"
               >
                 {att.preview_url ? (
                   <img src={att.preview_url} alt="thumb" className="w-5 h-5 rounded object-cover" />
                 ) : (
-                  <FileText className="w-4 h-4 text-primary-400" />
+                  <FileText className="w-4 h-4 text-indigo-600" />
                 )}
-                <span className="truncate max-w-[150px]">{att.file_name}</span>
+                <span className="truncate max-w-[150px] font-medium">{att.file_name}</span>
                 <button
                   onClick={() => setPendingAttachments((prev) => prev.filter((_, i) => i !== idx))}
-                  className="text-slate-400 hover:text-rose-400 transition"
+                  className="text-slate-400 hover:text-rose-500 transition"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -582,8 +581,8 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
         )}
 
         {/* --- MESSAGE COMPOSER --- */}
-        <div className="p-3.5 border-t border-slate-800/80 bg-slate-950 shrink-0">
-          <form onSubmit={handleSendMessage} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden focus-within:border-primary-500/60 transition shadow-lg">
+        <div className="p-3.5 border-t border-slate-200 bg-slate-50/60 shrink-0">
+          <form onSubmit={handleSendMessage} className="bg-white border border-slate-300 rounded-2xl overflow-hidden focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition shadow-xs">
             <textarea
               rows={2}
               value={inputText}
@@ -594,19 +593,19 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
                 }
               }}
               placeholder={`Message #${activeChannel?.name || 'channel'}... (Ctrl+Enter to send)`}
-              className="w-full bg-transparent px-4 py-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none resize-none leading-relaxed"
+              className="w-full bg-transparent px-4 py-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none resize-none leading-relaxed font-normal"
             />
 
             {/* Composer Toolbar */}
-            <div className="px-3 py-2 bg-slate-950/60 border-t border-slate-800/60 flex items-center justify-between">
-              <div className="flex items-center gap-1 text-slate-400">
+            <div className="px-3 py-2 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-1 text-slate-500">
                 {/* Code block insertion */}
                 <button
                   type="button"
                   onClick={() => setShowCodeModal(true)}
                   title="Share Code Snippet"
-                  className={`p-1.5 rounded-lg hover:bg-slate-800 hover:text-slate-200 transition ${
-                    codeText.trim() ? 'text-primary-400 bg-primary-500/10' : ''
+                  className={`p-1.5 rounded-lg hover:bg-slate-200/70 hover:text-slate-800 transition ${
+                    codeText.trim() ? 'text-indigo-600 bg-indigo-50' : ''
                   }`}
                 >
                   <Code className="w-4 h-4" />
@@ -624,10 +623,10 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFile}
                   title="Attach file or image (Presigned Upload)"
-                  className="p-1.5 rounded-lg hover:bg-slate-800 hover:text-slate-200 transition"
+                  className="p-1.5 rounded-lg hover:bg-slate-200/70 hover:text-slate-800 transition"
                 >
                   {uploadingFile ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
                   ) : (
                     <Paperclip className="w-4 h-4" />
                   )}
@@ -638,7 +637,7 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
                 <button
                   type="submit"
                   disabled={isSending || (!inputText.trim() && !codeText.trim() && pendingAttachments.length === 0)}
-                  className="px-3.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-md shadow-primary-900/30 disabled:opacity-50 transition"
+                  className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 disabled:opacity-50 transition"
                 >
                   {isSending ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -655,16 +654,16 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
 
       {/* --- CODE SNIPPET MODAL --- */}
       {showCodeModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Code className="w-4 h-4 text-primary-400" />
-                <h4 className="font-semibold text-slate-100 text-sm">Share Code Snippet</h4>
+                <Code className="w-4 h-4 text-indigo-600" />
+                <h4 className="font-bold text-slate-900 text-sm">Share Code Snippet</h4>
               </div>
               <button
                 onClick={() => setShowCodeModal(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-slate-400 hover:text-slate-700 p-1"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -672,11 +671,11 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
 
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Language</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Language</label>
                 <select
                   value={codeLanguage}
                   onChange={(e) => setCodeLanguage(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-primary-500"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
                 >
                   <option value="typescript">TypeScript</option>
                   <option value="javascript">JavaScript</option>
@@ -690,21 +689,21 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Code</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Code</label>
                 <textarea
                   rows={8}
                   value={codeText}
                   onChange={(e) => setCodeText(e.target.value)}
                   placeholder="// Paste your code snippet here..."
-                  className="w-full font-mono bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-emerald-300 focus:outline-none focus:border-primary-500 leading-relaxed"
+                  className="w-full font-mono bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-emerald-300 focus:outline-none focus:border-indigo-500 leading-relaxed"
                 />
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-end gap-2">
+            <div className="p-4 border-t border-slate-200 bg-slate-50/70 flex items-center justify-end gap-2">
               <button
                 onClick={() => setShowCodeModal(false)}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
               >
                 Cancel
               </button>
@@ -717,7 +716,7 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
                   setShowCodeModal(false);
                   toast.success('Snippet attached to composer!');
                 }}
-                className="px-4 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-medium text-xs"
+                className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm shadow-indigo-600/20"
               >
                 Attach Snippet
               </button>
@@ -730,17 +729,17 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
       {activeLightboxImg && (
         <div
           onClick={() => setActiveLightboxImg(null)}
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-6 cursor-zoom-out"
+          className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-6 cursor-zoom-out"
         >
           <div className="relative max-w-4xl max-h-[90vh]">
             <img
               src={activeLightboxImg}
               alt="Enlarged preview"
-              className="max-h-[85vh] w-auto rounded-xl shadow-2xl object-contain"
+              className="max-h-[85vh] w-auto rounded-xl shadow-2xl object-contain bg-white"
             />
             <button
               onClick={() => setActiveLightboxImg(null)}
-              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-slate-800 border border-slate-700 text-white flex items-center justify-center hover:bg-slate-700 transition"
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-slate-100 shadow-md transition"
             >
               <X className="w-4 h-4" />
             </button>
