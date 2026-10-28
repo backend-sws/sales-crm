@@ -22,6 +22,7 @@ class SettingsController extends BaseApiController
     {
         $geminiKey = AppSetting::get('gemini_api_key', env('GEMINI_API_KEY'));
         $geminiModel = AppSetting::get('gemini_model', 'gemini-1.5-flash');
+        $aiMode = AppSetting::get('ai_mode', ! empty($geminiKey) ? 'gemini_cloud' : 'built_in');
         $githubOrg = AppSetting::get('github_default_org', '');
         $githubSecret = AppSetting::get('github_webhook_secret', '');
 
@@ -29,7 +30,9 @@ class SettingsController extends BaseApiController
 
         return $this->successResponse([
             'gemini' => [
-                'is_configured' => ! empty($geminiKey),
+                'is_configured' => true, // Built-in Smart AI engine is always ready out of the box
+                'has_cloud_key' => ! empty($geminiKey),
+                'ai_mode'       => $aiMode,
                 'masked_key'    => $maskedKey,
                 'model'         => $geminiModel,
             ],
@@ -51,14 +54,23 @@ class SettingsController extends BaseApiController
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'ai_mode'               => 'nullable|string|in:built_in,gemini_cloud',
             'gemini_api_key'        => 'nullable|string|max:255',
             'gemini_model'          => 'nullable|string|max:100',
             'github_default_org'    => 'nullable|string|max:100',
             'github_webhook_secret' => 'nullable|string|max:255',
         ]);
 
-        if (isset($validated['gemini_api_key']) && trim($validated['gemini_api_key']) !== '') {
-            AppSetting::set('gemini_api_key', trim($validated['gemini_api_key']), 'ai', true);
+        if (array_key_exists('ai_mode', $validated) && ! empty($validated['ai_mode'])) {
+            AppSetting::set('ai_mode', $validated['ai_mode'], 'ai', false);
+        }
+
+        if (array_key_exists('gemini_api_key', $validated)) {
+            $keyVal = trim((string) $validated['gemini_api_key']);
+            AppSetting::set('gemini_api_key', $keyVal, 'ai', true);
+            if ($keyVal !== '') {
+                AppSetting::set('ai_mode', 'gemini_cloud', 'ai', false);
+            }
         }
 
         if (isset($validated['gemini_model']) && trim($validated['gemini_model']) !== '') {
@@ -73,25 +85,34 @@ class SettingsController extends BaseApiController
             AppSetting::set('github_webhook_secret', trim($validated['github_webhook_secret']), 'github', true);
         }
 
-        // Test Gemini key if provided
+        $aiMode = AppSetting::get('ai_mode', 'built_in');
         $testResult = null;
-        $testKey = AppSetting::get('gemini_api_key', env('GEMINI_API_KEY'));
-        if (! empty($testKey)) {
-            try {
-                $testUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$testKey}";
-                $testRes = Http::timeout(5)->post($testUrl, [
-                    'contents' => [
-                        ['parts' => [['text' => 'Ping']]]
-                    ]
-                ]);
-                $testResult = $testRes->successful() ? 'connected' : 'invalid_key';
-            } catch (\Throwable $e) {
-                $testResult = 'connection_error';
+
+        if ($aiMode === 'gemini_cloud') {
+            $testKey = AppSetting::get('gemini_api_key', env('GEMINI_API_KEY'));
+            $model = AppSetting::get('gemini_model', 'gemini-1.5-flash');
+            if (! empty($testKey)) {
+                try {
+                    $testUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$testKey}";
+                    $testRes = Http::timeout(5)->post($testUrl, [
+                        'contents' => [
+                            ['parts' => [['text' => 'Ping']]]
+                        ]
+                    ]);
+                    $testResult = $testRes->successful() ? 'connected' : 'invalid_key';
+                } catch (\Throwable $e) {
+                    $testResult = 'connection_error';
+                }
+            } else {
+                $testResult = 'missing_key';
             }
+        } else {
+            $testResult = 'built_in_active';
         }
 
         return $this->successResponse([
             'test_status' => $testResult,
+            'ai_mode'     => $aiMode,
         ], 'Integrations settings saved successfully.');
     }
 }

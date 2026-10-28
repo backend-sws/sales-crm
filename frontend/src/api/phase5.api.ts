@@ -247,6 +247,8 @@ export interface DeveloperPerformanceTelemetry {
 export interface IntegrationSettingsResponse {
   gemini: {
     is_configured: boolean;
+    has_cloud_key?: boolean;
+    ai_mode?: 'built_in' | 'gemini_cloud';
     masked_key?: string | null;
     model: string;
   };
@@ -380,11 +382,12 @@ export const phase5Api = {
   },
 
   updateIntegrationSettings: async (data: {
+    ai_mode?: 'built_in' | 'gemini_cloud';
     gemini_api_key?: string;
     gemini_model?: string;
     github_default_org?: string;
     github_webhook_secret?: string;
-  }): Promise<{ test_status?: string }> => {
+  }): Promise<{ test_status?: string; ai_mode?: string }> => {
     const res = await api.post('/settings/integrations', data);
     return res.data.data;
   },

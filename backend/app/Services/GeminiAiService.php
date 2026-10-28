@@ -172,6 +172,11 @@ Respond in JSON with key:
      */
     protected function queryGeminiJson(string $prompt): ?array
     {
+        $aiMode = \App\Models\AppSetting::get('ai_mode', ! empty($this->apiKey) ? 'gemini_cloud' : 'built_in');
+        if ($aiMode !== 'gemini_cloud') {
+            return null;
+        }
+
         $key = \App\Models\AppSetting::get('gemini_api_key', $this->apiKey);
         if (empty($key)) {
             return null;
@@ -313,7 +318,7 @@ Respond in JSON with key:
             'executive_summary' => 'Meeting covered key milestones, architectural alignment, and delivery deadlines. Outstanding action items have been prioritized for immediate execution.',
             'key_decisions'     => $decisions,
             'action_items'      => $actionItems,
-            'powered_by'        => 'Smart Analytical Heuristic (Gemini Ready)',
+            'powered_by'        => 'SalesCRM Smart AI (Built-in Heuristic)',
             'provider'          => 'heuristic_fallback',
         ];
     }
@@ -355,7 +360,7 @@ Respond in JSON with key:
                 'blocked_tasks'   => $blocked,
                 'total_tasks'     => $total,
             ],
-            'powered_by'      => 'Smart Analytical Heuristic (Gemini Ready)',
+            'powered_by'      => 'SalesCRM Smart AI (Built-in Heuristic)',
             'provider'        => 'heuristic_fallback',
         ];
     }
@@ -365,10 +370,13 @@ Respond in JSON with key:
      */
     protected function generateTaskBreakdownFallback(string $requirement): array
     {
+        $cleanTitle = trim(preg_replace('/^(implement|build|create|add|develop)\s+/i', '', $requirement));
+        $cleanTitle = \Illuminate\Support\Str::limit($cleanTitle, 55);
+
         return [
             'suggested_tasks' => [
                 [
-                    'title'           => "Architecture & Database Schema for {$requirement}",
+                    'title'           => "Architecture & Database Schema for {$cleanTitle}",
                     'description'     => 'Define migrations, indexes, and Eloquent model contracts.',
                     'priority'        => 'high',
                     'complexity'      => 'medium',
@@ -376,7 +384,7 @@ Respond in JSON with key:
                     'estimated_hours' => 4.0,
                 ],
                 [
-                    'title'           => "API Controller & Business Logic for {$requirement}",
+                    'title'           => "API Controller & Business Logic for {$cleanTitle}",
                     'description'     => 'Build validated REST API endpoints with standardized envelope responses.',
                     'priority'        => 'high',
                     'complexity'      => 'medium',
@@ -384,7 +392,7 @@ Respond in JSON with key:
                     'estimated_hours' => 6.0,
                 ],
                 [
-                    'title'           => "Frontend UI & Component Implementation for {$requirement}",
+                    'title'           => "Frontend UI & Component Implementation for {$cleanTitle}",
                     'description'     => 'Develop React 19 interactive interfaces, state management, and alerts.',
                     'priority'        => 'medium',
                     'complexity'      => 'medium',
@@ -400,7 +408,7 @@ Respond in JSON with key:
                     'estimated_hours' => 3.0,
                 ],
             ],
-            'powered_by'      => 'Smart Analytical Heuristic (Gemini Ready)',
+            'powered_by'      => 'SalesCRM Smart AI (Built-in Heuristic)',
             'provider'        => 'heuristic_fallback',
         ];
     }
