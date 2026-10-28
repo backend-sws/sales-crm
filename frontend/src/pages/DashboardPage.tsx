@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import {
-  DollarSign,
+  IndianRupee,
   Users,
   Award,
   Calendar,
@@ -207,7 +207,7 @@ export default function DashboardPage() {
         <StatCard
           title="Total Pipeline Value"
           value={loading ? '...' : formatINR(metrics?.summary?.total_pipeline_value || 0)}
-          icon={DollarSign}
+          icon={IndianRupee}
           trend={{ value: '+12.5%', isPositive: true }}
           subtitle="Across all deal stages"
           color="indigo"

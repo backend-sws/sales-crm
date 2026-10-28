@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, DollarSign, Target, ShieldCheck, Zap, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, IndianRupee, Target, ShieldCheck, Zap, ArrowUpRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { analyticsApi, type RevenueForecastData } from '@/api/analytics.api';
 

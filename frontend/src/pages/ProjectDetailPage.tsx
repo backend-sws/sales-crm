@@ -234,8 +234,8 @@ export default function ProjectDetailPage() {
               />
             </div>
             <div className="text-[11px] text-slate-400 flex justify-between">
-              <span>Cost: ${Number(project.budget_snapshot?.actual_cost || 0).toLocaleString()}</span>
-              <span>Total: ${Number(project.total_value || 0).toLocaleString()}</span>
+              <span>Cost: ₹{Number(project.budget_snapshot?.actual_cost || 0).toLocaleString('en-IN')}</span>
+              <span>Total: ₹{Number(project.total_value || 0).toLocaleString('en-IN')}</span>
             </div>
           </div>
 

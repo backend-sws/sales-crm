@@ -10,7 +10,7 @@ import {
   Phone,
   Mail,
   Calendar,
-  DollarSign,
+  IndianRupee,
   User,
   Sparkles,
 } from 'lucide-react';

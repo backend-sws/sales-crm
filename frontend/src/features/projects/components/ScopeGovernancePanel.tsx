@@ -7,7 +7,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  DollarSign,
+  IndianRupee,
   AlertCircle,
   Eye,
   FileCheck,
@@ -514,7 +514,7 @@ export function ScopeGovernancePanel({
               required
               value={crTitle}
               onChange={(e) => setCrTitle(e.target.value)}
-              placeholder="e.g. Add Multi-Currency Support (USD, EUR, GBP)"
+              placeholder="e.g. Add Multi-Payment Gateway (UPI, Razorpay, Netbanking)"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
             />
           </div>

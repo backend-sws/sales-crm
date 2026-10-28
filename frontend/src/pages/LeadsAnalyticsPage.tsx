@@ -13,7 +13,7 @@ import {
   RefreshCw,
   PieChart as PieChartIcon,
   CheckCircle2,
-  DollarSign,
+  IndianRupee,
   AlertCircle,
   Trophy,
   TrendingDown,

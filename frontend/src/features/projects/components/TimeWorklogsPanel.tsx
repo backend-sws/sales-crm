@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Plus, DollarSign, Calendar, User as UserIcon, CheckCircle2, Shield } from 'lucide-react';
+import { Clock, Plus, IndianRupee, Calendar, User as UserIcon, CheckCircle2, Shield } from 'lucide-react';
 import { projectsApi, type TimeEntryItem, type TaskItem } from '@/api/projects.api';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
@@ -108,7 +108,7 @@ export function TimeWorklogsPanel({
               </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <DollarSign className="w-5 h-5" />
+              <IndianRupee className="w-5 h-5" />
             </div>
           </div>
         )}

@@ -184,7 +184,7 @@ export function CreateTaskModal({
               <option value="">General (No Milestone)</option>
               {milestones.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.title} (${Number(m.amount).toLocaleString()})
+                  {m.title} (₹{Number(m.amount).toLocaleString('en-IN')})
                 </option>
               ))}
             </select>

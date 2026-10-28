@@ -202,7 +202,7 @@ export default function ProjectsPage() {
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-black text-slate-900 dark:text-white">
-              ${totalValue.toLocaleString()}
+              ₹{totalValue.toLocaleString('en-IN')}
             </span>
           </div>
           <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
@@ -222,7 +222,7 @@ export default function ProjectsPage() {
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-black text-slate-900 dark:text-white">
-              ${Math.round(totalBudgetConsumed).toLocaleString()}
+              ₹{Math.round(totalBudgetConsumed).toLocaleString('en-IN')}
             </span>
             <span className="text-xs text-slate-400">
               ({totalValue > 0 ? Math.round((totalBudgetConsumed / totalValue) * 100) : 0}%)
@@ -388,7 +388,7 @@ export default function ProjectsPage() {
                             : 'text-slate-800 dark:text-slate-200'
                         }`}
                       >
-                        {budgetPercent}% (${Number(proj.total_value || 0).toLocaleString()})
+                        {budgetPercent}% (₹{Number(proj.total_value || 0).toLocaleString('en-IN')})
                       </span>
                     </div>
 
@@ -498,7 +498,7 @@ export default function ProjectsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Contract / Budget Value ($)
+                Contract / Budget Value (₹)
               </label>
               <input
                 type="number"
