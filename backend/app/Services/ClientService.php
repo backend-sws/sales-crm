@@ -67,9 +67,9 @@ class ClientService implements ClientServiceInterface
                 $q->with([
                     'projectManager:id,name,email,avatar',
                     'sprints' => fn($sq) => $sq->where('status', 'active')->limit(1),
-                    'milestones' => fn($mq) => $mq->orderBy('target_date')->limit(10),
+                    'milestones' => fn($mq) => $mq->orderBy('due_date')->limit(10),
                     'meetings' => fn($meq) => $meq->with(['creator:id,name', 'actionItems.assignee:id,name'])->orderBy('scheduled_at', 'desc')->limit(10),
-                    'githubRepo:id,project_id,repo_full_name,is_active',
+                    'githubRepo',
                     'channels' => fn($cq) => $cq->where('is_internal', false)->withCount('messages'),
                 ])->withCount([
                     'tasks',
