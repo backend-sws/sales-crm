@@ -21,6 +21,11 @@ use App\Http\Controllers\Api\V1\ScopeGovernanceController;
 use App\Http\Controllers\Api\V1\ServiceTrackController;
 use App\Http\Controllers\Api\V1\SprintController;
 use App\Http\Controllers\Api\V1\TimeTrackingController;
+use App\Http\Controllers\Api\V1\AiController;
+use App\Http\Controllers\Api\V1\ChatController;
+use App\Http\Controllers\Api\V1\GitHubWebhookController;
+use App\Http\Controllers\Api\V1\PerformanceController;
+use App\Http\Controllers\Api\V1\StorageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -52,6 +57,9 @@ Route::prefix('v1')->group(function () {
 
     // Public Inbound Lead Capture (Webhooks, Website forms, Meta Ads)
     Route::post('/leads/inbound', [InboundLeadController::class, 'handleInbound']);
+
+    // Public GitHub Webhook (Push & Pull Request Ingestion)
+    Route::post('/webhooks/github', [GitHubWebhookController::class, 'handleWebhook']);
 
     // Report downloads (presigned/unique filename artifact access)
     Route::get('/reports/scheduled/download/{filename}', [ReportController::class, 'download']);
@@ -201,6 +209,34 @@ Route::prefix('v1')->group(function () {
         Route::post('/projects/{projectId}/meetings', [ScopeGovernanceController::class, 'storeMeeting']);
         Route::post('/meetings/{id}/confirm', [ScopeGovernanceController::class, 'confirmMoM']);
         Route::post('/meeting-action-items/{id}/convert', [ScopeGovernanceController::class, 'convertActionItem']);
+
+        // Storage & Presigned Direct Uploads (Phase 5)
+        Route::post('/storage/presigned-upload', [StorageController::class, 'presignedUpload']);
+        Route::post('/storage/upload-direct', [StorageController::class, 'uploadDirect']);
+
+        // Slack Project Chat & Internal Notes (Phase 5)
+        Route::get('/projects/{projectId}/channels', [ChatController::class, 'channels']);
+        Route::get('/channels/{channelId}/messages', [ChatController::class, 'messages']);
+        Route::post('/channels/{channelId}/messages', [ChatController::class, 'sendMessage']);
+        Route::post('/messages/{messageId}/react', [ChatController::class, 'react']);
+
+        // GitHub Repository Integration & Git Analytics (Phase 5)
+        Route::post('/projects/{projectId}/github/link', [GitHubWebhookController::class, 'linkRepo']);
+        Route::get('/projects/{projectId}/github/analytics', [GitHubWebhookController::class, 'analytics']);
+        Route::post('/projects/{projectId}/github/simulate-webhook', [GitHubWebhookController::class, 'simulate']);
+
+        // Google Gemini Generative AI Assistant (Phase 5)
+        Route::get('/ai/leads/{id}/suggestions', [AiController::class, 'leadSuggestions']);
+        Route::post('/ai/meetings/{id}/summarize', [AiController::class, 'summarizeMeeting']);
+        Route::get('/ai/sprints/{id}/risk-assessment', [AiController::class, 'sprintRisk']);
+        Route::post('/ai/projects/{id}/generate-tasks', [AiController::class, 'generateTasks']);
+
+        // Multi-Signal Developer Performance & Feedback (Phase 5)
+        Route::post('/feedback/tasks/{id}', [PerformanceController::class, 'submitTaskFeedback']);
+        Route::post('/feedback/{id}/dispute', [PerformanceController::class, 'dispute']);
+        Route::post('/admin/feedback/{id}/resolve-dispute', [PerformanceController::class, 'resolveDispute']);
+        Route::get('/developers/{id}/performance', [PerformanceController::class, 'developerPerformance']);
+        Route::get('/admin/performance/leaderboard', [PerformanceController::class, 'leaderboard']);
     });
 });
 

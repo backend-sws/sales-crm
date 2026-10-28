@@ -39,6 +39,11 @@ class AppServiceProvider extends ServiceProvider
         \App\Contracts\Services\TimeTrackingServiceInterface::class => \App\Services\TimeTrackingService::class,
         \App\Contracts\Services\SprintServiceInterface::class => \App\Services\SprintService::class,
         \App\Contracts\Services\ScopeGovernanceServiceInterface::class => \App\Services\ScopeGovernanceService::class,
+        \App\Contracts\Services\PresignedStorageServiceInterface::class => \App\Services\PresignedStorageService::class,
+        \App\Contracts\Services\ChatServiceInterface::class => \App\Services\ChatService::class,
+        \App\Contracts\Services\GitHubWebhookServiceInterface::class => \App\Services\GitHubWebhookService::class,
+        \App\Contracts\Services\AiAssistantServiceInterface::class => \App\Services\GeminiAiService::class,
+        \App\Contracts\Services\PerformanceServiceInterface::class => \App\Services\PerformanceService::class,
     ];
 
     /**

@@ -89,4 +89,19 @@ class Project extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+
+    public function githubRepos(): HasMany
+    {
+        return $this->hasMany(GithubRepo::class);
+    }
+
+    public function channels(): HasMany
+    {
+        return $this->hasMany(ProjectChannel::class);
+    }
+
+    public function feedbackResponses(): HasMany
+    {
+        return $this->hasMany(FeedbackResponse::class);
+    }
 }

@@ -90,6 +90,16 @@ class Task extends Model
         return $this->hasMany(TimeEntry::class);
     }
 
+    public function githubCommits(): HasMany
+    {
+        return $this->hasMany(GithubCommit::class);
+    }
+
+    public function feedbackResponses(): HasMany
+    {
+        return $this->hasMany(FeedbackResponse::class);
+    }
+
     public function getActualHoursAttribute(): float
     {
         $minutes = $this->timeEntries()->sum('duration_minutes');

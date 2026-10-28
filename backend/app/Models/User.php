@@ -90,5 +90,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(TimeEntry::class, 'user_id');
     }
+
+    public function feedbackResponses(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(FeedbackResponse::class, 'developer_id');
+    }
+
+    public function performanceScores(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PerformanceScore::class, 'developer_id');
+    }
 }
 

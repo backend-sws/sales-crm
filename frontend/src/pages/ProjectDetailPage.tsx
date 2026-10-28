@@ -33,9 +33,13 @@ import { ProjectBudgetPanel } from '../features/projects/components/ProjectBudge
 import { ScopeGovernancePanel } from '../features/projects/components/ScopeGovernancePanel';
 import { ProjectMeetingsPanel } from '../features/projects/components/ProjectMeetingsPanel';
 import { CreateTaskModal } from '../features/projects/components/CreateTaskModal';
+import { ProjectChatSlack } from '../features/projects/components/ProjectChatSlack';
+import { ProjectGitAnalyticsPanel } from '../features/projects/components/ProjectGitAnalyticsPanel';
+import { ProjectAiInsightsPanel } from '../features/projects/components/ProjectAiInsightsPanel';
+import { MessageSquare, GitBranch, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
-type ProjectTab = 'kanban' | 'sprints' | 'gantt' | 'time' | 'budget' | 'scope' | 'meetings';
+type ProjectTab = 'kanban' | 'sprints' | 'gantt' | 'time' | 'budget' | 'scope' | 'meetings' | 'chat' | 'git' | 'ai';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -129,6 +133,9 @@ export default function ProjectDetailPage() {
     { key: 'budget', label: 'Budget & Capacity', icon: TrendingUp },
     { key: 'scope', label: 'Scope Governance & CR', icon: ShieldCheck },
     { key: 'meetings', label: 'Meetings & MoM', icon: Calendar },
+    { key: 'chat', label: 'Slack Chat', icon: MessageSquare },
+    { key: 'git', label: 'Git & Analytics', icon: GitBranch },
+    { key: 'ai', label: 'Gemini AI', icon: Sparkles },
   ];
 
   return (
@@ -325,6 +332,30 @@ export default function ProjectDetailPage() {
             projectId={projectId}
             users={users}
             isClient={isClient}
+          />
+        )}
+
+        {activeTab === 'chat' && (
+          <ProjectChatSlack
+            projectId={projectId}
+            projectTitle={project.name}
+          />
+        )}
+
+        {activeTab === 'git' && (
+          <ProjectGitAnalyticsPanel
+            projectId={projectId}
+            projectTitle={project.name}
+            tasks={project.tasks || []}
+          />
+        )}
+
+        {activeTab === 'ai' && (
+          <ProjectAiInsightsPanel
+            projectId={projectId}
+            projectTitle={project.name}
+            sprints={project.sprints || []}
+            onTaskCreated={fetchProjectDetails}
           />
         )}
       </div>
