@@ -16,6 +16,7 @@ import {
   Users,
   Briefcase,
   FolderKanban,
+  Settings,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -47,6 +48,7 @@ export const crmMenuGroups = [
       { name: "Team & Access Control", href: "/admin/users", icon: Users },
       { name: "Audit Trail Explorer", href: "/admin/audit-logs", icon: ShieldCheck },
       { name: "API & System Health", href: "/system-status", icon: Activity },
+      { name: "Settings", href: "/settings", icon: Settings, superAdminOnly: true },
     ],
   },
 ];
@@ -140,7 +142,22 @@ export function Sidebar({ className = "" }: { className?: string }) {
   }, [toggleSidebar]);
 
   const isClientUser = user?.roles?.includes('client');
-  const activeMenuGroups = isClientUser ? clientMenuGroups : crmMenuGroups;
+  const isSuperAdmin = Boolean(
+    user?.roles?.some((r) => r === 'super_admin' || r === 'superadmin')
+  );
+
+  const baseMenuGroups = isClientUser ? clientMenuGroups : crmMenuGroups;
+  const activeMenuGroups = baseMenuGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item: any) => {
+        if (item.superAdminOnly && !isSuperAdmin) {
+          return false;
+        }
+        return true;
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
 
   const handleNavClick = () => {
     if (typeof window !== "undefined" && window.innerWidth < 1024) {
@@ -329,13 +346,25 @@ export function Sidebar({ className = "" }: { className?: string }) {
               )}
             </div>
             {!isSidebarCollapsed && (
-              <button
-                onClick={() => logout()}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                title="Sign out"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1">
+                {isSuperAdmin && (
+                  <Link
+                    to="/settings"
+                    onClick={handleNavClick}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-colors"
+                    title="System Settings (Super Admin)"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+                <button
+                  onClick={() => logout()}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                  title="Sign out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
           </div>
         </div>

@@ -19,12 +19,24 @@ const ClientDetailPage = lazy(() => import("./pages/ClientDetailPage"));
 const ClientPortalPage = lazy(() => import("./pages/ClientPortalPage"));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
 const ProjectDetailPage = lazy(() => import("./pages/ProjectDetailPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
   if (!token) {
     return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
+
+function SuperAdminOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuthStore();
+  const isSuperAdmin = Boolean(
+    user?.roles?.some((r) => r === 'super_admin' || r === 'superadmin')
+  );
+  if (!isSuperAdmin) {
+    return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;
 }
@@ -87,6 +99,8 @@ export default function App() {
             <Route path="/admin/users" element={<StaffOnlyRoute><AdminUsersPage /></StaffOnlyRoute>} />
             <Route path="/admin/audit-logs" element={<StaffOnlyRoute><AdminAuditLogsPage /></StaffOnlyRoute>} />
             <Route path="/system-status" element={<StaffOnlyRoute><SystemStatusPage /></StaffOnlyRoute>} />
+            <Route path="/settings" element={<SuperAdminOnlyRoute><SettingsPage /></SuperAdminOnlyRoute>} />
+            <Route path="/admin/settings" element={<Navigate to="/settings" replace />} />
           </Route>
 
           {/* Catch-all redirect */}
