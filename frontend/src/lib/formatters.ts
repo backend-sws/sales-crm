@@ -6,14 +6,55 @@ export const formatCurrency = (val: number) => {
   }).format(val);
 };
 
-export const formatDate = (dateStr: string | null) => {
+export const formatDate = (dateStr: string | null | undefined): string => {
   if (!dateStr) return 'N/A';
-  const date = new Date(dateStr);
-  return new Intl.DateTimeFormat('en-IN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(date);
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return String(dateStr);
+    return new Intl.DateTimeFormat('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  } catch {
+    return String(dateStr);
+  }
+};
+
+export const formatDateTime = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return 'N/A';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return String(dateStr);
+    return new Intl.DateTimeFormat('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  } catch {
+    return String(dateStr);
+  }
+};
+
+export const formatDateWithDays = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return 'N/A';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return String(dateStr);
+    const formatted = formatDate(dateStr);
+    const now = new Date();
+    const diffTime = date.getTime() - now.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays > 1) return `${formatted} (in ${diffDays} days)`;
+    if (diffDays === 1) return `${formatted} (Tomorrow)`;
+    if (diffDays === 0) return `${formatted} (Today)`;
+    if (diffDays === -1) return `${formatted} (Yesterday)`;
+    return `${formatted} (${Math.abs(diffDays)} days ago)`;
+  } catch {
+    return String(dateStr);
+  }
 };
 
 export const numberToIndianWords = (amount: number | string | null | undefined): string => {

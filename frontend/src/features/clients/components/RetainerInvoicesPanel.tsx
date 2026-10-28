@@ -17,12 +17,15 @@ import { clientsApi } from '@/api/clients.api';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { toast } from 'sonner';
+import { formatDate, formatDateWithDays } from '@/lib/formatters';
+import { useAuthStore } from '@/store/authStore';
 
 interface RetainerInvoicesPanelProps {
   clientId: number;
   invoices: InvoiceItem[];
   services: ClientServiceItem[];
   onRefresh: () => void;
+  isClient?: boolean;
 }
 
 export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
@@ -30,7 +33,18 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
   invoices,
   services,
   onRefresh,
+  isClient: explicitIsClient,
 }) => {
+  const { user } = useAuthStore();
+  const isClient = explicitIsClient !== undefined ? explicitIsClient : Boolean(
+    user?.roles?.includes('client') ||
+    user?.client_id ||
+    (!user?.roles?.some((r) => ['super_admin', 'admin', 'project_manager', 'developer', 'account_manager', 'sales_manager'].includes(r)))
+  );
+  const isStaff = Boolean(
+    user?.roles?.some((r) => ['super_admin', 'admin', 'project_manager', 'developer', 'account_manager', 'sales_manager'].includes(r))
+  );
+
   const [generating, setGenerating] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceItem | null>(null);
   const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
@@ -146,15 +160,17 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
           <p className="text-xs text-slate-500">Includes auto-computed CGST, SGST &amp; IGST tax breakdown.</p>
         </div>
 
-        <Button
-          size="sm"
-          isLoading={generating}
-          onClick={handleGenerateInvoice}
-          className="gap-2 bg-primary-600 hover:bg-primary-700 text-white"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Generate Retainer Invoice</span>
-        </Button>
+        {isStaff && (
+          <Button
+            size="sm"
+            isLoading={generating}
+            onClick={handleGenerateInvoice}
+            className="gap-2 bg-primary-600 hover:bg-primary-700 text-white"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Generate Retainer Invoice</span>
+          </Button>
+        )}
       </div>
 
       {/* Invoice Table */}
@@ -188,8 +204,8 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
                     </div>
                   </td>
                   <td className="py-3 px-4 text-slate-500">
-                    <div>Issued: {new Date(inv.issue_date).toLocaleDateString()}</div>
-                    <div className="text-[10px] text-slate-400">Due: {new Date(inv.due_date).toLocaleDateString()}</div>
+                    <div>Issued: {formatDate(inv.issue_date)}</div>
+                    <div className="text-[10px] text-slate-400">Due: {formatDateWithDays(inv.due_date)}</div>
                   </td>
                   <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
                     ₹{Number(inv.subtotal).toLocaleString('en-IN')}
@@ -209,16 +225,26 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
                   </td>
                   <td className="py-3 px-4">{getStatusBadge(inv.status)}</td>
                   <td className="py-3 px-4 text-right">
-                    {inv.status !== 'paid' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openMarkPaid(inv)}
-                        className="text-xs text-emerald-600 hover:text-emerald-700 border-emerald-200 dark:border-emerald-800/40 gap-1.5"
-                      >
-                        <CreditCard className="w-3.5 h-3.5" />
-                        <span>Record Payment</span>
-                      </Button>
+                    {inv.status !== 'paid' ? (
+                      isStaff ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openMarkPaid(inv)}
+                          className="text-xs text-emerald-600 hover:text-emerald-700 border-emerald-200 dark:border-emerald-800/40 gap-1.5"
+                        >
+                          <CreditCard className="w-3.5 h-3.5" />
+                          <span>Record Payment</span>
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-amber-600 font-semibold bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2.5 py-1 rounded-lg">
+                          Payment Pending
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-xs text-emerald-600 font-semibold flex items-center justify-end gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Paid
+                      </span>
                     )}
                   </td>
                 </tr>

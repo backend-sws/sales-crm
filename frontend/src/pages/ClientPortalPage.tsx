@@ -642,6 +642,7 @@ export default function ClientPortalPage() {
           <ServiceTicketsPanel
             services={client.services || []}
             onRefresh={fetchPortalData}
+            isClient={!isPreviewMode}
           />
         </div>
       )}
@@ -656,6 +657,7 @@ export default function ClientPortalPage() {
             invoices={client.invoices || []}
             services={client.services || []}
             onRefresh={fetchPortalData}
+            isClient={!isPreviewMode}
           />
         </div>
       )}
@@ -669,6 +671,7 @@ export default function ClientPortalPage() {
             clientId={client.id}
             documents={client.documents || []}
             onRefresh={fetchPortalData}
+            isClient={!isPreviewMode}
           />
         </div>
       )}
@@ -681,6 +684,7 @@ export default function ClientPortalPage() {
           <ClientOnboardingCard
             client={client}
             onRefresh={fetchPortalData}
+            isClient={!isPreviewMode}
           />
         </div>
       )}

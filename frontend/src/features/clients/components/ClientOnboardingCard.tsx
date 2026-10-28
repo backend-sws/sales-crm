@@ -3,6 +3,7 @@ import { CheckCircle2, Circle, Sparkles, ArrowRight } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientsApi, type OnboardingStepItem, type ClientItem } from '@/api/clients.api';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/authStore';
 
 interface ClientOnboardingCardProps {
   client?: ClientItem | null;
@@ -11,6 +12,7 @@ interface ClientOnboardingCardProps {
   steps?: OnboardingStepItem[];
   onRefresh?: () => void;
   onStepChange?: () => void;
+  isClient?: boolean;
 }
 
 export function ClientOnboardingCard({
@@ -20,8 +22,16 @@ export function ClientOnboardingCard({
   steps: explicitSteps,
   onRefresh,
   onStepChange,
+  isClient: explicitIsClient,
 }: ClientOnboardingCardProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const isClient = explicitIsClient !== undefined ? explicitIsClient : Boolean(
+    user?.roles?.includes('client') ||
+    user?.client_id ||
+    (!user?.roles?.some((r) => ['super_admin', 'admin', 'project_manager', 'developer', 'account_manager', 'sales_manager'].includes(r)))
+  );
+  const isStaff = !isClient;
 
   const clientId = explicitClientId || client?.id || 0;
   const completed = explicitCompleted !== undefined ? explicitCompleted : (client?.onboarding_completed ?? false);
@@ -89,37 +99,66 @@ export function ClientOnboardingCard({
       {/* Checklist items */}
       <div className="space-y-2 pt-1">
         {steps.map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            disabled={toggleMutation.isPending}
-            onClick={() =>
-              toggleMutation.mutate({
-                stepKey: s.key,
-                nextState: !s.completed,
-              })
-            }
-            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left group"
-          >
-            <div className="flex items-center gap-2.5">
-              {s.completed ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              ) : (
-                <Circle className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-primary-500 shrink-0" />
-              )}
-              <span
-                className={`text-xs font-semibold ${
-                  s.completed
-                    ? 'text-slate-400 line-through'
-                    : 'text-slate-700 dark:text-slate-200 group-hover:text-primary-600'
-                }`}
-              >
-                {s.label}
+          isStaff ? (
+            <button
+              key={s.key}
+              type="button"
+              disabled={toggleMutation.isPending}
+              onClick={() =>
+                toggleMutation.mutate({
+                  stepKey: s.key,
+                  nextState: !s.completed,
+                })
+              }
+              className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-2.5">
+                {s.completed ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <Circle className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-primary-500 shrink-0" />
+                )}
+                <span
+                  className={`text-xs font-semibold ${
+                    s.completed
+                      ? 'text-slate-400 line-through'
+                      : 'text-slate-700 dark:text-slate-200 group-hover:text-primary-600'
+                  }`}
+                >
+                  {s.label}
+                </span>
+              </div>
+
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          ) : (
+            <div
+              key={s.key}
+              className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                {s.completed ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <Circle className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
+                )}
+                <span
+                  className={`text-xs font-semibold ${
+                    s.completed
+                      ? 'text-slate-400 line-through'
+                      : 'text-slate-700 dark:text-slate-200'
+                  }`}
+                >
+                  {s.label}
+                </span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
+                s.completed ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {s.completed ? 'Completed' : 'Pending Team Action'}
               </span>
             </div>
-
-            <ArrowRight className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
+          )
         ))}
       </div>
     </div>

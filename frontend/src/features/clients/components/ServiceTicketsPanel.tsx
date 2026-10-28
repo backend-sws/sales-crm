@@ -18,16 +18,30 @@ import { clientsApi } from '@/api/clients.api';
 import { Button } from '@/components/ui/button';
 import { CreateTicketModal } from './CreateTicketModal';
 import { toast } from 'sonner';
+import { formatDate, formatDateWithDays } from '@/lib/formatters';
+import { useAuthStore } from '@/store/authStore';
 
 interface ServiceTicketsPanelProps {
   services: ClientServiceItem[];
   onRefresh: () => void;
+  isClient?: boolean;
 }
 
 export const ServiceTicketsPanel: React.FC<ServiceTicketsPanelProps> = ({
   services,
   onRefresh,
+  isClient: explicitIsClient,
 }) => {
+  const { user } = useAuthStore();
+  const isClient = explicitIsClient !== undefined ? explicitIsClient : Boolean(
+    user?.roles?.includes('client') ||
+    user?.client_id ||
+    (!user?.roles?.some((r) => ['super_admin', 'admin', 'project_manager', 'developer', 'account_manager', 'sales_manager'].includes(r)))
+  );
+  const isStaff = Boolean(
+    user?.roles?.some((r) => ['super_admin', 'admin', 'project_manager', 'developer', 'account_manager', 'sales_manager'].includes(r))
+  );
+
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(
     services.length > 0 ? services[0].id : null
   );
@@ -64,6 +78,19 @@ export const ServiceTicketsPanel: React.FC<ServiceTicketsPanelProps> = ({
       onRefresh();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to confirm ticket');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleRequestRevision = async (ticketId: number) => {
+    try {
+      setUpdatingId(ticketId);
+      await clientsApi.updateTicketStatus(ticketId, 'in_progress');
+      toast.info('Revision requested! Ticket returned to development team.');
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to request revision');
     } finally {
       setUpdatingId(null);
     }
@@ -160,7 +187,7 @@ export const ServiceTicketsPanel: React.FC<ServiceTicketsPanelProps> = ({
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Next Scheduled Invoicing</span>
             <span className="text-sm font-bold text-slate-900 dark:text-white">
-              {activeService.next_invoice_date || 'N/A'}
+              {formatDateWithDays(activeService.next_invoice_date)}
             </span>
           </div>
         </div>
@@ -220,7 +247,7 @@ export const ServiceTicketsPanel: React.FC<ServiceTicketsPanelProps> = ({
                   {ticket.sla_deadline && (
                     <span className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
                       <Clock className="w-3.5 h-3.5" />
-                      SLA: {new Date(ticket.sla_deadline).toLocaleDateString()}
+                      SLA: {formatDate(ticket.sla_deadline)}
                     </span>
                   )}
                   {ticket.assignee && (
@@ -229,59 +256,131 @@ export const ServiceTicketsPanel: React.FC<ServiceTicketsPanelProps> = ({
                       {ticket.assignee.name}
                     </span>
                   )}
-                  <span>Created {new Date(ticket.created_at).toLocaleDateString()}</span>
+                  <span>Created {formatDate(ticket.created_at)}</span>
                 </div>
               </div>
 
-              {/* Status Action Buttons */}
+              {/* Status Action Buttons with Strict Role Governance */}
               <div className="flex items-center gap-2 shrink-0 border-t md:border-t-0 pt-2 md:pt-0">
                 {ticket.status === 'open' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    isLoading={updatingId === ticket.id}
-                    onClick={() => handleStatusChange(ticket.id, 'in_progress')}
-                    className="text-xs gap-1.5"
-                  >
-                    <Play className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Start Task</span>
-                  </Button>
+                  isStaff ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        isLoading={updatingId === ticket.id}
+                        onClick={() => handleStatusChange(ticket.id, 'in_progress')}
+                        className="text-xs gap-1.5"
+                      >
+                        <Play className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Start Task</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        isLoading={updatingId === ticket.id}
+                        onClick={() => handleStatusChange(ticket.id, 'closed')}
+                        className="text-xs text-slate-400 hover:text-slate-600"
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Queued (Awaiting Pickup)</span>
+                    </span>
+                  )
                 )}
 
                 {ticket.status === 'in_progress' && (
-                  <Button
-                    size="sm"
-                    isLoading={updatingId === ticket.id}
-                    onClick={() => handleStatusChange(ticket.id, 'done')}
-                    className="text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
-                  >
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span>Mark Delivered</span>
-                  </Button>
+                  isStaff ? (
+                    <Button
+                      size="sm"
+                      isLoading={updatingId === ticket.id}
+                      onClick={() => handleStatusChange(ticket.id, 'done')}
+                      className="text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>Mark Delivered</span>
+                    </Button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                      <Play className="w-3.5 h-3.5 text-blue-500" />
+                      <span>In Progress by Team</span>
+                    </span>
+                  )
                 )}
 
                 {ticket.status === 'done' && (
-                  <Button
-                    size="sm"
-                    isLoading={updatingId === ticket.id}
-                    onClick={() => handleClientConfirm(ticket.id)}
-                    className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Client Confirm</span>
-                  </Button>
+                  isClient ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        isLoading={updatingId === ticket.id}
+                        onClick={() => handleClientConfirm(ticket.id)}
+                        className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-semibold"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Accept & Confirm</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        isLoading={updatingId === ticket.id}
+                        onClick={() => handleRequestRevision(ticket.id)}
+                        className="text-xs gap-1.5 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/50 font-semibold"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Request Revision</span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Awaiting Client Sign-off</span>
+                      </span>
+                      {user?.roles?.includes('super_admin') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          isLoading={updatingId === ticket.id}
+                          onClick={() => handleClientConfirm(ticket.id)}
+                          className="text-[10px] text-slate-400 hover:text-slate-600"
+                          title="Super Admin Override: Sign-off on behalf of client"
+                        >
+                          Override Confirm
+                        </Button>
+                      )}
+                    </div>
+                  )
                 )}
 
-                {ticket.status !== 'closed' && ticket.status !== 'open' && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    isLoading={updatingId === ticket.id}
-                    onClick={() => handleStatusChange(ticket.id, 'closed')}
-                    className="text-xs text-slate-400 hover:text-slate-600"
-                  >
-                    Close
-                  </Button>
+                {ticket.status === 'confirmed' && (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Confirmed by Client ✓</span>
+                    </span>
+                    {isStaff && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        isLoading={updatingId === ticket.id}
+                        onClick={() => handleStatusChange(ticket.id, 'closed')}
+                        className="text-xs text-slate-400 hover:text-slate-600"
+                      >
+                        Archive
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {ticket.status === 'closed' && (
+                  <span className="text-xs text-slate-400 font-semibold px-2">
+                    Closed
+                  </span>
                 )}
               </div>
             </div>

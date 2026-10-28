@@ -18,18 +18,32 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { ESignDocumentModal } from './ESignDocumentModal';
 import { toast } from 'sonner';
+import { formatDate, formatDateTime } from '@/lib/formatters';
+import { useAuthStore } from '@/store/authStore';
 
 interface ClientDocumentsPanelProps {
   clientId: number;
   documents: ClientDocumentItem[];
   onRefresh: () => void;
+  isClient?: boolean;
 }
 
 export const ClientDocumentsPanel: React.FC<ClientDocumentsPanelProps> = ({
   clientId,
   documents,
   onRefresh,
+  isClient: explicitIsClient,
 }) => {
+  const { user } = useAuthStore();
+  const isClient = explicitIsClient !== undefined ? explicitIsClient : Boolean(
+    user?.roles?.includes('client') ||
+    user?.client_id ||
+    (!user?.roles?.some((r) => ['super_admin', 'admin', 'project_manager', 'developer', 'account_manager', 'sales_manager'].includes(r)))
+  );
+  const isStaff = Boolean(
+    user?.roles?.some((r) => ['super_admin', 'admin', 'project_manager', 'developer', 'account_manager', 'sales_manager'].includes(r))
+  );
+
   const [selectedDocToSign, setSelectedDocToSign] = useState<ClientDocumentItem | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -99,14 +113,16 @@ export const ClientDocumentsPanel: React.FC<ClientDocumentsPanelProps> = ({
           </p>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => setIsAddOpen(true)}
-          className="gap-2 bg-primary-600 hover:bg-primary-700 text-white"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Upload Agreement</span>
-        </Button>
+        {isStaff && (
+          <Button
+            size="sm"
+            onClick={() => setIsAddOpen(true)}
+            className="gap-2 bg-primary-600 hover:bg-primary-700 text-white"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Upload Agreement</span>
+          </Button>
+        )}
       </div>
 
       {/* Documents List */}
@@ -140,7 +156,7 @@ export const ClientDocumentsPanel: React.FC<ClientDocumentsPanelProps> = ({
                       {doc.title}
                     </h4>
                     <span className="text-[11px] text-slate-400 block">
-                      Added {new Date(doc.created_at).toLocaleDateString()}
+                      Added {formatDate(doc.created_at)}
                     </span>
                   </div>
                 </div>
@@ -156,7 +172,7 @@ export const ClientDocumentsPanel: React.FC<ClientDocumentsPanelProps> = ({
                       Signer: <span className="font-semibold">{doc.signer_name}</span>
                     </div>
                     <div className="text-emerald-700/90 dark:text-emerald-300/80">
-                      Timestamp: {doc.signed_at ? new Date(doc.signed_at).toLocaleString() : 'Recorded'}
+                      Timestamp: {doc.signed_at ? formatDateTime(doc.signed_at) : 'Recorded'}
                     </div>
                     {doc.signer_ip && (
                       <div className="text-emerald-700/90 dark:text-emerald-300/80 font-mono text-[10px]">
@@ -180,14 +196,20 @@ export const ClientDocumentsPanel: React.FC<ClientDocumentsPanelProps> = ({
                 </a>
 
                 {doc.status === 'pending_signature' && (
-                  <Button
-                    size="sm"
-                    onClick={() => setSelectedDocToSign(doc)}
-                    className="gap-1.5 text-xs bg-primary-600 hover:bg-primary-700 text-white shadow-xs"
-                  >
-                    <PenTool className="w-3.5 h-3.5" />
-                    <span>Sign Document</span>
-                  </Button>
+                  isClient ? (
+                    <Button
+                      size="sm"
+                      onClick={() => setSelectedDocToSign(doc)}
+                      className="gap-1.5 text-xs bg-primary-600 hover:bg-primary-700 text-white shadow-xs font-semibold"
+                    >
+                      <PenTool className="w-3.5 h-3.5" />
+                      <span>Sign Document</span>
+                    </Button>
+                  ) : (
+                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2.5 py-1 rounded-xl">
+                      🟡 Awaiting Client Signature
+                    </span>
+                  )
                 )}
               </div>
             </div>
