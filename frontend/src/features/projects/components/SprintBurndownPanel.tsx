@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Flame,
   Calendar,
@@ -9,6 +9,15 @@ import {
   TrendingDown,
   Target,
   FileText,
+  Edit3,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  ListTodo,
+  Layers,
+  AlertCircle,
+  User,
+  Check,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -18,9 +27,8 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend,
 } from 'recharts';
-import { projectsApi, type SprintItem, type BurndownData } from '@/api/projects.api';
+import { projectsApi, type SprintItem, type BurndownData, type TaskItem } from '@/api/projects.api';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -28,13 +36,59 @@ import { toast } from 'sonner';
 interface SprintBurndownPanelProps {
   projectId: number;
   sprints: SprintItem[];
+  tasks?: TaskItem[];
   onRefresh: () => void;
   isClientView?: boolean;
+}
+
+/**
+ * Format raw date strings (ISO or Y-m-d) cleanly as '15 Oct 2026'
+ */
+function formatSprintDate(dateStr?: string | null): string {
+  if (!dateStr) return '—';
+  try {
+    const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const parts = clean.split('-').map(Number);
+    if (parts.length !== 3) return dateStr;
+    const [year, month, day] = parts;
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Computes remaining days and duration indicators
+ */
+function getSprintDurationInfo(start?: string | null, end?: string | null) {
+  if (!start || !end) return null;
+  try {
+    const sStr = start.includes('T') ? start.split('T')[0] : start;
+    const eStr = end.includes('T') ? end.split('T')[0] : end;
+    const [sy, sm, sd] = sStr.split('-').map(Number);
+    const [ey, em, ed] = eStr.split('-').map(Number);
+    const s = new Date(sy, sm - 1, sd);
+    const e = new Date(ey, em - 1, ed);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const totalDays = Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    const isEnded = today.getTime() > e.getTime();
+    const isFuture = today.getTime() < s.getTime();
+    const remainingDays = Math.max(0, Math.ceil((e.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+
+    return { totalDays, isEnded, isFuture, remainingDays };
+  } catch {
+    return null;
+  }
 }
 
 export function SprintBurndownPanel({
   projectId,
   sprints,
+  tasks = [],
   onRefresh,
   isClientView = false,
 }: SprintBurndownPanelProps) {
@@ -44,6 +98,7 @@ export function SprintBurndownPanel({
 
   const [burndown, setBurndown] = useState<BurndownData | null>(null);
   const [loadingBurndown, setLoadingBurndown] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
 
   // Close sprint modal
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
@@ -58,6 +113,27 @@ export function SprintBurndownPanel({
   const [newSprintStart, setNewSprintStart] = useState('');
   const [newSprintEnd, setNewSprintEnd] = useState('');
   const [creatingSprint, setCreatingSprint] = useState(false);
+
+  // Edit Sprint Modal
+  const [isEditSprintOpen, setIsEditSprintOpen] = useState(false);
+  const [editSprintName, setEditSprintName] = useState('');
+  const [editSprintGoal, setEditSprintGoal] = useState('');
+  const [editSprintVelocity, setEditSprintVelocity] = useState<number | ''>(40);
+  const [editSprintStart, setEditSprintStart] = useState('');
+  const [editSprintEnd, setEditSprintEnd] = useState('');
+  const [updatingSprint, setUpdatingSprint] = useState(false);
+
+  // Assign Backlog Tasks Modal
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedBacklogIds, setSelectedBacklogIds] = useState<number[]>([]);
+  const [assigningTasks, setAssigningTasks] = useState(false);
+
+  // Sync selected sprint if empty or sprints change
+  useEffect(() => {
+    if (!selectedSprintId && sprints.length > 0) {
+      setSelectedSprintId(sprints.find((s) => s.status === 'active')?.id || sprints[0].id);
+    }
+  }, [sprints, selectedSprintId]);
 
   const selectedSprint = sprints.find((s) => s.id === selectedSprintId);
 
@@ -79,20 +155,32 @@ export function SprintBurndownPanel({
     }
   };
 
-  const handleCloseSprint = async () => {
-    if (!selectedSprintId) return;
-    try {
-      setClosing(true);
-      await projectsApi.closeSprint(selectedSprintId, retroNotes || undefined);
-      toast.success('Sprint closed successfully and velocity computed!');
-      setIsCloseModalOpen(false);
-      setRetroNotes('');
-      onRefresh();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to close sprint.');
-    } finally {
-      setClosing(false);
-    }
+  const openNewSprintModal = () => {
+    const today = new Date();
+    const twoWeeksLater = new Date();
+    twoWeeksLater.setDate(today.getDate() + 14);
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const toYmd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    setNewSprintName(`Sprint ${(sprints.length || 0) + 1}`);
+    setNewSprintGoal('');
+    setNewSprintVelocity(40);
+    setNewSprintStart(toYmd(today));
+    setNewSprintEnd(toYmd(twoWeeksLater));
+    setIsNewSprintOpen(true);
+  };
+
+  const openEditSprintModal = () => {
+    if (!selectedSprint) return;
+    const cleanDate = (d?: string | null) => (d ? (d.includes('T') ? d.split('T')[0] : d) : '');
+
+    setEditSprintName(selectedSprint.name);
+    setEditSprintGoal(selectedSprint.goal || '');
+    setEditSprintVelocity(selectedSprint.velocity_target || 40);
+    setEditSprintStart(cleanDate(selectedSprint.start_date));
+    setEditSprintEnd(cleanDate(selectedSprint.end_date));
+    setIsEditSprintOpen(true);
   };
 
   const handleCreateSprint = async (e: React.FormEvent) => {
@@ -115,8 +203,6 @@ export function SprintBurndownPanel({
 
       toast.success('Sprint created and set to active!');
       setIsNewSprintOpen(false);
-      setNewSprintName('');
-      setNewSprintGoal('');
       onRefresh();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to create sprint.');
@@ -125,18 +211,111 @@ export function SprintBurndownPanel({
     }
   };
 
+  const handleUpdateSprint = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSprintId || !editSprintName.trim()) return;
+
+    try {
+      setUpdatingSprint(true);
+      await projectsApi.updateSprint(selectedSprintId, {
+        name: editSprintName.trim(),
+        goal: editSprintGoal.trim() || undefined,
+        velocity_target: editSprintVelocity ? Number(editSprintVelocity) : undefined,
+        start_date: editSprintStart || undefined,
+        end_date: editSprintEnd || undefined,
+      });
+
+      toast.success('Sprint timeline & details updated!');
+      setIsEditSprintOpen(false);
+      onRefresh();
+      loadBurndown(selectedSprintId);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to update sprint.');
+    } finally {
+      setUpdatingSprint(false);
+    }
+  };
+
+  const handleCloseSprint = async () => {
+    if (!selectedSprintId) return;
+    try {
+      setClosing(true);
+      await projectsApi.closeSprint(selectedSprintId, retroNotes || undefined);
+      toast.success('Sprint closed successfully and velocity recorded!');
+      setIsCloseModalOpen(false);
+      setRetroNotes('');
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to close sprint.');
+    } finally {
+      setClosing(false);
+    }
+  };
+
+  const handleAssignBacklogTasks = async () => {
+    if (!selectedSprintId || selectedBacklogIds.length === 0) return;
+    try {
+      setAssigningTasks(true);
+      await projectsApi.assignTasksToSprint(selectedSprintId, selectedBacklogIds);
+      toast.success(`${selectedBacklogIds.length} task(s) added to sprint!`);
+      setIsAssignModalOpen(false);
+      setSelectedBacklogIds([]);
+      onRefresh();
+      loadBurndown(selectedSprintId);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to assign tasks.');
+    } finally {
+      setAssigningTasks(false);
+    }
+  };
+
+  // Filter tasks belonging to selected sprint
+  const sprintTasks = useMemo(() => {
+    if (!selectedSprintId) return [];
+    return tasks.filter((t) => t.sprint_id === selectedSprintId);
+  }, [tasks, selectedSprintId]);
+
+  // Backlog tasks available for assignment
+  const backlogTasks = useMemo(() => {
+    return tasks.filter((t) => !t.sprint_id || t.sprint_id !== selectedSprintId);
+  }, [tasks, selectedSprintId]);
+
+  const durationInfo = getSprintDurationInfo(selectedSprint?.start_date, selectedSprint?.end_date);
+
+  // Compute live points from assigned tasks if sprint object doesn't have them
+  const liveTotalPoints = sprintTasks.reduce(
+    (acc, t) => acc + (t.story_points || t.estimated_hours || 5),
+    0
+  );
+  const liveCompletedPoints = sprintTasks
+    .filter((t) => t.status === 'done')
+    .reduce((acc, t) => acc + (t.story_points || t.estimated_hours || 5), 0);
+
+  const displayTotalPoints = selectedSprint?.total_story_points || liveTotalPoints || 0;
+  const displayCompletedPoints = selectedSprint?.completed_story_points || liveCompletedPoints || 0;
+
   return (
     <div className="space-y-6">
-      {/* Sprint Selection Bar */}
+      {/* Header & Sprint Selector Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
             <Flame className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Sprint Planning &amp; Burndown Velocity
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                Sprint Planning &amp; Burndown Velocity
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowExplanation(!showExplanation)}
+                className="text-slate-400 hover:text-primary-500 transition-colors"
+                title="What is Sprint Burndown?"
+              >
+                <HelpCircle className="w-4 h-4" />
+              </button>
+            </div>
             <p className="text-xs text-slate-500">2-week timeboxes with ideal vs actual burn tracking</p>
           </div>
         </div>
@@ -159,6 +338,17 @@ export function SprintBurndownPanel({
 
           {!isClientView && (
             <>
+              {selectedSprint && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={openEditSprintModal}
+                  className="text-xs h-8 gap-1 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300"
+                >
+                  <Edit3 className="w-3.5 h-3.5" /> Edit Sprint
+                </Button>
+              )}
+
               {selectedSprint?.status === 'active' && (
                 <Button
                   size="sm"
@@ -170,7 +360,7 @@ export function SprintBurndownPanel({
                 </Button>
               )}
 
-              <Button size="sm" onClick={() => setIsNewSprintOpen(true)} className="text-xs h-8 gap-1">
+              <Button size="sm" onClick={openNewSprintModal} className="text-xs h-8 gap-1">
                 <Plus className="w-3.5 h-3.5" /> New Sprint
               </Button>
             </>
@@ -178,37 +368,113 @@ export function SprintBurndownPanel({
         </div>
       </div>
 
+      {/* Explanatory Guide Box (Collapsible) */}
+      {showExplanation && (
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/5 via-primary-500/5 to-purple-500/5 border border-indigo-500/20 dark:border-indigo-500/30 text-xs space-y-2.5">
+          <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white">
+            <span className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+              <Flame className="w-4 h-4" /> Sprint Burndown Guide: What is it &amp; How it works
+            </span>
+            <button
+              onClick={() => setShowExplanation(false)}
+              className="text-slate-400 hover:text-slate-600 text-xs"
+            >
+              Close
+            </button>
+          </div>
+          <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+            A <strong>Sprint</strong> is a focused, timeboxed period (typically 2 weeks / 14 days) where the development team commits to completing a specific batch of features/tasks.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-slate-600 dark:text-slate-400">
+            <div className="p-2.5 rounded-xl bg-white/70 dark:bg-white/[0.03] border border-indigo-100 dark:border-white/5 space-y-1">
+              <span className="font-bold text-slate-900 dark:text-slate-200 flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-primary-500" /> Story Points &amp; Velocity
+              </span>
+              <p className="text-[11px] leading-normal">
+                Story points quantify task complexity. Target Velocity is the planned points to burn down to 0 before the sprint ends.
+              </p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white/70 dark:bg-white/[0.03] border border-indigo-100 dark:border-white/5 space-y-1">
+              <span className="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                <span className="w-2.5 h-0.5 bg-indigo-500 border-dashed inline-block" /> Ideal Guideline
+              </span>
+              <p className="text-[11px] leading-normal">
+                A straight reference line showing the daily burn required so zero tasks remain on the final day.
+              </p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white/70 dark:bg-white/[0.03] border border-emerald-100 dark:border-white/5 space-y-1">
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                <span className="w-2.5 h-1 bg-emerald-500 rounded-full inline-block" /> Actual Burn
+              </span>
+              <p className="text-[11px] leading-normal">
+                Real-time remaining scope. As developers mark tasks &apos;Done&apos;, points drop down. Below ideal line means ahead of schedule!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sprint Overview Metrics */}
       {selectedSprint ? (
         <div className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10">
-              <span className="text-[11px] font-semibold text-slate-400">Sprint Timeline</span>
-              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-primary-500" />
-                {selectedSprint.start_date} → {selectedSprint.end_date}
+            {/* Timeline Card with Clean Date Formatting & Duration Status */}
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-400">Sprint Timeline</span>
+                {durationInfo && (
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      selectedSprint.status === 'completed'
+                        ? 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400'
+                        : durationInfo.isEnded
+                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                        : 'bg-primary-500/10 text-primary-600 dark:text-primary-400'
+                    }`}
+                  >
+                    {selectedSprint.status === 'completed'
+                      ? `${durationInfo.totalDays}d Total`
+                      : durationInfo.isEnded
+                      ? `Ended (${durationInfo.totalDays}d)`
+                      : `${durationInfo.remainingDays}d Left`}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-2 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                <span>
+                  {formatSprintDate(selectedSprint.start_date)} — {formatSprintDate(selectedSprint.end_date)}
+                </span>
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10">
+            {/* Velocity Target */}
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 flex flex-col justify-between">
               <span className="text-[11px] font-semibold text-slate-400">Velocity Target</span>
-              <p className="text-sm font-black text-primary-600 dark:text-primary-400 mt-1 flex items-center gap-1.5">
+              <p className="text-sm font-black text-primary-600 dark:text-primary-400 mt-2 flex items-center gap-1.5">
                 <Target className="w-4 h-4" />
-                {selectedSprint.velocity_target ? `${selectedSprint.velocity_target} pts` : 'Not set'}
+                {selectedSprint.velocity_target ? `${selectedSprint.velocity_target} pts` : '40 pts (Default)'}
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10">
-              <span className="text-[11px] font-semibold text-slate-400">Scope Delivered</span>
-              <p className="text-sm font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
+            {/* Scope Delivered */}
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-400">Scope Delivered</span>
+                <span className="text-[10px] font-bold text-slate-500">
+                  {sprintTasks.length} {sprintTasks.length === 1 ? 'task' : 'tasks'}
+                </span>
+              </div>
+              <p className="text-sm font-black text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
-                {selectedSprint.completed_story_points || 0} / {selectedSprint.total_story_points || 0} pts
+                {displayCompletedPoints} / {displayTotalPoints || selectedSprint.velocity_target || 40} pts
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10">
+            {/* Sprint Status */}
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 flex flex-col justify-between">
               <span className="text-[11px] font-semibold text-slate-400">Sprint Status</span>
-              <div className="mt-1">
+              <div className="mt-2 flex items-center justify-between">
                 <span
                   className={`inline-flex px-2 py-0.5 rounded-md text-[10px] uppercase font-black ${
                     selectedSprint.status === 'active'
@@ -220,6 +486,15 @@ export function SprintBurndownPanel({
                 >
                   {selectedSprint.status}
                 </span>
+
+                {durationInfo?.isEnded && selectedSprint.status === 'active' && !isClientView && (
+                  <button
+                    onClick={() => setIsCloseModalOpen(true)}
+                    className="text-[10px] text-amber-600 dark:text-amber-400 underline font-semibold"
+                  >
+                    Close now?
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -233,19 +508,22 @@ export function SprintBurndownPanel({
 
           {/* Recharts Burndown Chart */}
           <div className="p-5 rounded-3xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <TrendingDown className="w-4 h-4 text-orange-500" />
                   Sprint Burndown Trajectory
                 </h4>
-                <p className="text-xs text-slate-400">Remaining scope over sprint timeline</p>
+                <p className="text-xs text-slate-400">
+                  Remaining story points over sprint timeline (
+                  {burndown ? `${burndown.total_days} Days Cadence` : 'Daily resolution'})
+                </p>
               </div>
 
-              <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-0.5 bg-indigo-400 border-dashed" />
-                  <span className="text-slate-500">Ideal Guideline</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Ideal Guideline</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-1 bg-emerald-500 rounded-full" />
@@ -257,15 +535,41 @@ export function SprintBurndownPanel({
             <div className="h-72 w-full pt-2">
               {loadingBurndown ? (
                 <div className="h-full flex items-center justify-center text-xs text-slate-400">
-                  Calculating burndown...
+                  Calculating burndown trajectory...
                 </div>
               ) : burndown && burndown.burndown_points.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={burndown.burndown_points} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                    <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
+                    <XAxis
+                      dataKey="day"
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(val, i) => {
+                        const pt = burndown.burndown_points[i];
+                        if (pt?.date) {
+                          const clean = pt.date.includes('T') ? pt.date.split('T')[0] : pt.date;
+                          const parts = clean.split('-');
+                          if (parts.length === 3) {
+                            return `${val} (${parts[2]}/${parts[1]})`;
+                          }
+                        }
+                        return val;
+                      }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      unit=" pts"
+                      domain={[0, (dataMax: number) => Math.max(dataMax, selectedSprint.velocity_target || 40)]}
+                    />
                     <Tooltip
+                      formatter={(value: any, name: any) => [
+                        value !== null && value !== undefined ? `${value} pts` : 'Pending Day',
+                        String(name) === 'ideal_remaining' ? 'Ideal Remaining' : 'Actual Remaining',
+                      ]}
+                      labelFormatter={(label, payload) => {
+                        const pt = payload?.[0]?.payload;
+                        return `${label}${pt?.date ? ` • ${formatSprintDate(pt.date)}` : ''}`;
+                      }}
                       contentStyle={{
                         backgroundColor: '#121217',
                         border: '1px solid rgba(255,255,255,0.1)',
@@ -295,10 +599,116 @@ export function SprintBurndownPanel({
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full flex items-center justify-center text-xs text-slate-400">
-                  No task points logged in this sprint yet.
+                  No burndown data recorded for this sprint yet.
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Sprint Scope Breakdown & Assigned Tasks */}
+          <div className="p-5 rounded-3xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <ListTodo className="w-4 h-4 text-primary-500" />
+                  Sprint Backlog &amp; Scope Breakdown
+                </h4>
+                <p className="text-xs text-slate-400">
+                  {sprintTasks.length} task(s) assigned • {displayTotalPoints} story points committed
+                </p>
+              </div>
+
+              {!isClientView && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsAssignModalOpen(true)}
+                  className="text-xs h-8 gap-1.5 border-primary-500/30 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/20"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Assign Tasks from Backlog
+                </Button>
+              )}
+            </div>
+
+            {sprintTasks.length > 0 ? (
+              <div className="divide-y divide-slate-100 dark:divide-white/5 border border-slate-200/60 dark:border-white/10 rounded-2xl overflow-hidden">
+                {sprintTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                          task.status === 'done'
+                            ? 'bg-emerald-500'
+                            : task.status === 'in_progress'
+                            ? 'bg-blue-500'
+                            : 'bg-slate-300 dark:bg-zinc-700'
+                        }`}
+                      />
+                      <div className="truncate">
+                        <p
+                          className={`text-xs font-semibold truncate ${
+                            task.status === 'done'
+                              ? 'line-through text-slate-400 dark:text-zinc-500'
+                              : 'text-slate-800 dark:text-slate-200'
+                          }`}
+                        >
+                          {task.title}
+                        </p>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                          {task.assignee ? (
+                            <span className="flex items-center gap-1">
+                              <User className="w-3 h-3" /> {task.assignee.name}
+                            </span>
+                          ) : (
+                            <span>Unassigned</span>
+                          )}
+                          <span>•</span>
+                          <span className="uppercase font-semibold text-[9px] tracking-wider">
+                            {task.priority}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-500/20">
+                        {task.story_points || task.estimated_hours || 5} pts
+                      </span>
+
+                      <span
+                        className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-md ${
+                          task.status === 'done'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                            : task.status === 'in_progress'
+                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                            : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        {task.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 text-center rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/10 text-xs text-slate-400 space-y-2">
+                <Layers className="w-6 h-6 mx-auto text-slate-300 dark:text-zinc-600" />
+                <p>No tasks currently assigned to this sprint.</p>
+                {!isClientView && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsAssignModalOpen(true)}
+                    className="text-xs h-7 gap-1 mx-auto"
+                  >
+                    <Plus className="w-3 h-3" /> Add Backlog Tasks
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Retrospective notes if sprint is completed */}
@@ -314,48 +724,107 @@ export function SprintBurndownPanel({
           )}
         </div>
       ) : (
-        <div className="p-8 text-center bg-white dark:bg-[#121217] rounded-3xl border border-slate-200/80 dark:border-white/10 text-slate-400 text-xs">
-          No sprints created yet for this project.
+        <div className="p-8 text-center bg-white dark:bg-[#121217] rounded-3xl border border-slate-200/80 dark:border-white/10 text-slate-400 text-xs space-y-3">
+          <Flame className="w-8 h-8 mx-auto text-slate-300 dark:text-zinc-600" />
+          <p>No sprints created yet for this project.</p>
+          {!isClientView && (
+            <Button size="sm" onClick={openNewSprintModal} className="text-xs h-8 gap-1 mx-auto">
+              <Plus className="w-3.5 h-3.5" /> Launch First Sprint
+            </Button>
+          )}
         </div>
       )}
 
-      {/* Close Sprint Modal */}
+      {/* Edit Sprint Modal */}
       <Modal
-        isOpen={isCloseModalOpen}
-        onClose={() => setIsCloseModalOpen(false)}
+        isOpen={isEditSprintOpen}
+        onClose={() => setIsEditSprintOpen(false)}
         maxWidth="md"
         title={
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+              <Edit3 className="w-4 h-4" />
             </div>
-            <span>Close Sprint &amp; Log Retrospective</span>
+            <span>Edit Sprint Timeline &amp; Targets</span>
           </div>
         }
-        description={`Sprint: ${selectedSprint?.name || ''}`}
+        description="Update dates, cadence, velocity target, or sprint goal."
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
-            <Button variant="outline" size="sm" onClick={() => setIsCloseModalOpen(false)}>
+            <Button variant="outline" size="sm" type="button" onClick={() => setIsEditSprintOpen(false)}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleCloseSprint} disabled={closing} className="bg-orange-600 hover:bg-orange-700 text-white">
-              {closing ? 'Closing...' : 'Confirm & Close Sprint'}
+            <Button size="sm" type="button" disabled={updatingSprint} onClick={handleUpdateSprint}>
+              {updatingSprint ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         }
       >
-        <div className="space-y-3 pt-1">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Sprint Retrospective Notes (What went well, what can be improved?)
-          </label>
-          <textarea
-            value={retroNotes}
-            onChange={(e) => setRetroNotes(e.target.value)}
-            placeholder="Team completed auth module ahead of schedule. Staging deployment had 1 CORS delay..."
-            rows={4}
-            className="w-full p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 resize-none font-sans"
-          />
-        </div>
+        <form onSubmit={handleUpdateSprint} className="space-y-3.5 pt-1">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Sprint Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={editSprintName}
+              onChange={(e) => setEditSprintName(e.target.value)}
+              className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Sprint Goal
+            </label>
+            <input
+              type="text"
+              value={editSprintGoal}
+              onChange={(e) => setEditSprintGoal(e.target.value)}
+              placeholder="e.g. Complete checkout and authentication flow"
+              className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={editSprintStart}
+                onChange={(e) => setEditSprintStart(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={editSprintEnd}
+                onChange={(e) => setEditSprintEnd(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Velocity Target (Story Points)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={editSprintVelocity}
+              onChange={(e) => setEditSprintVelocity(e.target.value ? Number(e.target.value) : '')}
+              className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            />
+          </div>
+        </form>
       </Modal>
 
       {/* New Sprint Modal */}
@@ -371,7 +840,7 @@ export function SprintBurndownPanel({
             <span>Create New Sprint Timebox</span>
           </div>
         }
-        description="Define cadence, velocity target, and sprint objectives."
+        description="Define cadence (defaults to 2-week timebox), velocity target, and sprint objectives."
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
             <Button variant="outline" size="sm" type="button" onClick={() => setIsNewSprintOpen(false)}>
@@ -425,7 +894,7 @@ export function SprintBurndownPanel({
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                End Date
+                End Date (Default 14 days)
               </label>
               <input
                 type="date"
@@ -449,6 +918,133 @@ export function SprintBurndownPanel({
             />
           </div>
         </form>
+      </Modal>
+
+      {/* Assign Backlog Tasks Modal */}
+      <Modal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        maxWidth="lg"
+        title={
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+              <Plus className="w-4 h-4" />
+            </div>
+            <span>Assign Tasks to {selectedSprint?.name}</span>
+          </div>
+        }
+        description="Select tasks from the backlog to include in this sprint's scope and velocity tracking."
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <span className="text-xs text-slate-400">
+              {selectedBacklogIds.length} task(s) selected
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" type="button" onClick={() => setIsAssignModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                type="button"
+                disabled={assigningTasks || selectedBacklogIds.length === 0}
+                onClick={handleAssignBacklogTasks}
+              >
+                {assigningTasks ? 'Assigning...' : `Add to Sprint (${selectedBacklogIds.length})`}
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <div className="space-y-3 pt-1">
+          {backlogTasks.length > 0 ? (
+            <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-white/5 border border-slate-200 dark:border-zinc-800 rounded-xl">
+              {backlogTasks.map((t) => {
+                const isChecked = selectedBacklogIds.includes(t.id);
+                return (
+                  <label
+                    key={t.id}
+                    className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-white/[0.02] cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedBacklogIds((prev) => [...prev, t.id]);
+                          } else {
+                            setSelectedBacklogIds((prev) => prev.filter((id) => id !== t.id));
+                          }
+                        }}
+                        className="rounded border-slate-300 dark:border-zinc-700 text-primary-600 focus:ring-primary-500"
+                      />
+                      <div className="truncate">
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                          {t.title}
+                        </p>
+                        <span className="text-[10px] text-slate-400 capitalize">
+                          {t.status} • {t.priority}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 shrink-0">
+                      {t.story_points || t.estimated_hours || 5} pts
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-xs text-slate-400">
+              No backlog tasks available to assign. All project tasks are already assigned to sprints!
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Close Sprint Modal */}
+      <Modal
+        isOpen={isCloseModalOpen}
+        onClose={() => setIsCloseModalOpen(false)}
+        maxWidth="md"
+        title={
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+            <span>Close Sprint &amp; Log Retrospective</span>
+          </div>
+        }
+        description={`Sprint: ${selectedSprint?.name || ''}`}
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button variant="outline" size="sm" onClick={() => setIsCloseModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCloseSprint}
+              disabled={closing}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {closing ? 'Closing...' : 'Confirm & Close Sprint'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3 pt-1">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            Sprint Retrospective Notes (What went well, what can be improved?)
+          </label>
+          <textarea
+            value={retroNotes}
+            onChange={(e) => setRetroNotes(e.target.value)}
+            placeholder="Team completed auth module ahead of schedule. Staging deployment had 1 CORS delay..."
+            rows={4}
+            className="w-full p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 resize-none font-sans"
+          />
+        </div>
       </Modal>
     </div>
   );

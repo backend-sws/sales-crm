@@ -75,6 +75,11 @@ class SprintService implements SprintServiceInterface
         $tasks = $sprint->tasks()->get();
         $totalScope = (float) ($tasks->sum('story_points') ?: $tasks->sum('estimated_hours') ?: ($tasks->count() * 5));
 
+        // If tasks have 0 total points or sprint has no tasks yet, baseline to velocity_target so chart is not empty/flat
+        if ($totalScope <= 0) {
+            $totalScope = (float) ($sprint->velocity_target ?: 40);
+        }
+
         $startDate = Carbon::parse($sprint->start_date)->startOfDay();
         $endDate = Carbon::parse($sprint->end_date)->endOfDay();
         $totalDays = max(1, (int) $startDate->diffInDays($endDate) + 1);
@@ -95,7 +100,11 @@ class SprintService implements SprintServiceInterface
                 $actualRemaining = null; // Do not plot future days
             } else {
                 $completedPoints = (float) $tasks
-                    ->filter(fn($t) => $t->status === 'done' && $t->completed_at && Carbon::parse($t->completed_at)->lte($currentDate->endOfDay()))
+                    ->filter(function($t) use ($currentDate) {
+                        if ($t->status !== 'done') return false;
+                        $doneDate = $t->completed_at ? Carbon::parse($t->completed_at) : Carbon::parse($t->updated_at);
+                        return $doneDate->lte($currentDate->endOfDay());
+                    })
                     ->sum(fn($t) => $t->story_points ?: $t->estimated_hours ?: 5);
 
                 $actualRemaining = max(0, round($totalScope - $completedPoints, 1));
@@ -119,6 +128,25 @@ class SprintService implements SprintServiceInterface
             'total_days'      => $totalDays,
             'burndown_points' => $dataPoints,
         ];
+    }
+
+    public function updateSprint(Sprint $sprint, array $data): Sprint
+    {
+        if (!empty($data['start_date'])) {
+            $data['start_date'] = Carbon::parse($data['start_date'])->toDateString();
+        }
+        if (!empty($data['end_date'])) {
+            $data['end_date'] = Carbon::parse($data['end_date'])->toDateString();
+        }
+
+        // If activating this sprint, move other active sprints to planned
+        if (($data['status'] ?? null) === 'active') {
+            $sprint->project->sprints()->where('id', '!=', $sprint->id)->where('status', 'active')->update(['status' => 'planned']);
+        }
+
+        $sprint->update($data);
+
+        return $sprint->fresh();
     }
 
     public function closeSprint(Sprint $sprint, ?string $retrospectiveNotes = null): Sprint

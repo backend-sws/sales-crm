@@ -359,6 +359,11 @@ export const projectsApi = {
     return res.data;
   },
 
+  updateSprint: async (sprintId: number, data: any) => {
+    const res = await api.put(`/sprints/${sprintId}`, data);
+    return res.data;
+  },
+
   assignTasksToSprint: async (sprintId: number, taskIds: number[]) => {
     const res = await api.post(`/sprints/${sprintId}/tasks`, { task_ids: taskIds });
     return res.data;

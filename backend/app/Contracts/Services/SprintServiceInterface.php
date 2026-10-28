@@ -15,5 +15,7 @@ interface SprintServiceInterface
 
     public function getBurndownData(Sprint $sprint): array;
 
+    public function updateSprint(Sprint $sprint, array $data): Sprint;
+
     public function closeSprint(Sprint $sprint, ?string $retrospectiveNotes = null): Sprint;
 }

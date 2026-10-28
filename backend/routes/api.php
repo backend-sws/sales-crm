@@ -205,6 +205,7 @@ Route::prefix('v1')->group(function () {
         // Sprints & Burndown (Phase 4)
         Route::get('/projects/{projectId}/sprints', [SprintController::class, 'index']);
         Route::post('/projects/{projectId}/sprints', [SprintController::class, 'store']);
+        Route::put('/sprints/{id}', [SprintController::class, 'update']);
         Route::post('/sprints/{id}/tasks', [SprintController::class, 'assignTasks']);
         Route::get('/sprints/{id}/burndown', [SprintController::class, 'burndown']);
         Route::patch('/sprints/{id}/close', [SprintController::class, 'close']);

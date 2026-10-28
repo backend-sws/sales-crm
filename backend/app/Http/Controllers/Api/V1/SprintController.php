@@ -89,6 +89,30 @@ class SprintController extends BaseApiController
         return $this->successResponse($burndown, 'Burndown chart data loaded.');
     }
 
+    #[OA\Put(
+        path: "/api/v1/sprints/{id}",
+        summary: "Update sprint details including dates, name, and velocity target",
+        security: [["bearerAuth" => []]],
+        tags: ["Sprints"]
+    )]
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $sprint = Sprint::findOrFail($id);
+
+        $validated = $request->validate([
+            'name'            => 'sometimes|string|max:100',
+            'goal'            => 'nullable|string|max:255',
+            'start_date'      => 'nullable|date',
+            'end_date'        => 'nullable|date|after_or_equal:start_date',
+            'velocity_target' => 'nullable|numeric|min:0',
+            'status'          => 'nullable|in:planned,active,completed',
+        ]);
+
+        $updated = $this->sprintService->updateSprint($sprint, $validated);
+
+        return $this->successResponse($updated, 'Sprint updated successfully.');
+    }
+
     #[OA\Patch(
         path: "/api/v1/sprints/{id}/close",
         summary: "Close sprint with retrospective notes and calculate achieved velocity",

@@ -346,6 +346,7 @@ export default function ProjectDetailPage() {
           <SprintBurndownPanel
             projectId={projectId}
             sprints={project.sprints || []}
+            tasks={project.tasks || []}
             onRefresh={fetchProjectDetails}
             isClientView={isClient}
           />
