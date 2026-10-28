@@ -16,7 +16,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { clientsApi, type ClientItem } from '@/api/clients.api';
-import { ClientHealthBadge } from '@/features/clients/components/ClientHealthBadge';
+import { ClientHealthBadge, CreateClientModal } from '@/features/clients/components';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -27,6 +27,7 @@ export default function ClientsPage() {
   const [search, setSearch] = useState('');
   const [healthFilter, setHealthFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -103,19 +104,29 @@ export default function ClientsPage() {
             size="sm"
             onClick={fetchClients}
             disabled={loading}
-            className="gap-1.5 text-xs"
+            className="gap-1.5 text-xs rounded-xl"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
 
           <Button
+            variant="outline"
             size="sm"
             onClick={() => navigate('/leads')}
-            className="gap-1.5 text-xs bg-primary-600 hover:bg-primary-700 text-white"
+            className="gap-1.5 text-xs rounded-xl text-slate-700 dark:text-slate-300"
           >
             <span>Convert Won Lead</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="gap-1.5 text-xs rounded-xl bg-primary-600 hover:bg-primary-700 text-white shadow-md shadow-primary-600/20"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Client</span>
           </Button>
         </div>
       </div>
@@ -231,8 +242,37 @@ export default function ClientsPage() {
               </tr>
             ) : clients.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
-                  No clients match the selected criteria. Convert won leads to build your client base!
+                <td colSpan={6} className="py-12 text-center">
+                  <div className="max-w-md mx-auto space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-950/40 text-primary-600 flex items-center justify-center mx-auto">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">No client accounts found</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Onboard a new client organization directly or convert a closed won lead from your sales pipeline.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="gap-1.5 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded-xl"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Client Directly
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate('/leads')}
+                        className="gap-1.5 text-xs rounded-xl"
+                      >
+                        Convert Won Lead
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -350,6 +390,14 @@ export default function ClientsPage() {
           </tbody>
         </table>
       </div>
+
+      <CreateClientModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          fetchClients();
+        }}
+      />
     </div>
   );
 }

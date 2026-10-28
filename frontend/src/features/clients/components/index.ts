@@ -7,3 +7,4 @@ export * from './RetainerInvoicesPanel';
 export * from './ClientDocumentsPanel';
 export * from './ESignDocumentModal';
 export * from './ClientBrandingEditor';
+export * from './CreateClientModal';

@@ -37,6 +37,38 @@ class ClientController extends BaseApiController
         return $this->paginatedResponse($clients, 'Clients retrieved successfully.');
     }
 
+    #[OA\Post(
+        path: "/api/v1/clients",
+        summary: "Directly onboard and create a new client account",
+        security: [["bearerAuth" => []]],
+        tags: ["Clients"]
+    )]
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'               => 'required|string|max:255',
+            'company'            => 'nullable|string|max:255',
+            'email'              => 'required|email|max:255|unique:clients,email',
+            'phone'              => 'nullable|string|max:50',
+            'gst_number'         => 'nullable|string|max:50',
+            'billing_address'    => 'nullable|string',
+            'billing_state'      => 'nullable|string|max:100',
+            'account_manager_id' => 'nullable|exists:users,id',
+            'service_name'       => 'nullable|string|max:255',
+            'service_type'       => 'nullable|string|in:recurring,fixed_scope,maintenance',
+            'billing_cycle'      => 'nullable|string|in:monthly,quarterly,yearly,milestone',
+            'service_value'      => 'nullable|numeric|min:0',
+            'service_notes'      => 'nullable|string',
+            'create_user'        => 'nullable|boolean',
+            'password'           => 'nullable|string|min:6',
+            'primary_color'      => 'nullable|string|max:7',
+        ]);
+
+        $client = $this->clientService->createClient($validated);
+
+        return $this->createdResponse($client, "Client account '{$client->company}' created successfully.");
+    }
+
     #[OA\Get(
         path: "/api/v1/clients/{id}",
         summary: "Get client profile, subscribed services, invoices, and sales history",

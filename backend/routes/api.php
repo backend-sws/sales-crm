@@ -137,6 +137,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/leads/{id}/convert', [ClientController::class, 'convert']);
         Route::get('/client/portal-profile', [ClientController::class, 'portalProfile']);
         Route::get('/clients', [ClientController::class, 'index']);
+        Route::post('/clients', [ClientController::class, 'store']);
         Route::get('/clients/{id}', [ClientController::class, 'show']);
         Route::patch('/clients/{id}', [ClientController::class, 'update']);
         Route::post('/clients/{id}/branding', [ClientController::class, 'updateBranding']);

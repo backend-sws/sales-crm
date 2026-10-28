@@ -156,6 +156,14 @@ export const clientsApi = {
   },
 
   /**
+   * Directly onboard and create a new client account.
+   */
+  async createClient(payload: Record<string, any>): Promise<ApiResponse<ClientItem>> {
+    const response = await api.post<ApiResponse<ClientItem>>('/clients', payload);
+    return response.data;
+  },
+
+  /**
    * Get single client profile with services, tickets, invoices and pre-sales history.
    */
   async getClient(id: number): Promise<ApiResponse<ClientItem>> {

@@ -18,6 +18,11 @@ interface ClientServiceInterface
     public function getClientProfile(int $clientId): Client;
 
     /**
+     * Directly onboard and create a new client account.
+     */
+    public function createClient(array $data): Client;
+
+    /**
      * Update client details.
      */
     public function updateClient(int $clientId, array $data): Client;

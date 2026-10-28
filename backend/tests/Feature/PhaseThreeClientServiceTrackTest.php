@@ -119,6 +119,46 @@ class PhaseThreeClientServiceTrackTest extends TestCase
         $this->assertTrue($user->hasRole('client'));
     }
 
+    public function test_can_directly_create_client_account(): void
+    {
+        $payload = [
+            'name'               => 'Rohan Mehra',
+            'company'            => 'Mehra FinTech Solutions Pvt Ltd',
+            'email'              => 'rohan@mehrafintech.com',
+            'phone'              => '+91 9988776655',
+            'gst_number'         => '27ABCDE1234F1Z5',
+            'billing_address'    => 'B-402, Trade Center, BKC',
+            'billing_state'      => 'Maharashtra',
+            'service_name'       => 'Full-Stack Dedicated Retainer',
+            'service_type'       => 'recurring',
+            'billing_cycle'      => 'monthly',
+            'service_value'      => 65000,
+            'create_user'        => true,
+            'password'           => 'Secret456',
+            'primary_color'      => '#3B82F6',
+        ];
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->postJson('/api/v1/clients', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.company', 'Mehra FinTech Solutions Pvt Ltd');
+
+        $clientId = $response->json('data.id');
+        $client = Client::find($clientId);
+        $this->assertNotNull($client);
+        $this->assertEquals('Maharashtra', $client->billing_state);
+        $this->assertNotNull($client->branding);
+        $this->assertNotNull($client->healthScore);
+        $this->assertCount(1, $client->services);
+        $this->assertEquals(65000.0, (float) $client->services[0]->value);
+
+        $user = User::where('email', 'rohan@mehrafintech.com')->first();
+        $this->assertNotNull($user);
+        $this->assertTrue($user->hasRole('client'));
+    }
+
     public function test_can_list_and_get_client_profile(): void
     {
         $client = Client::create([
