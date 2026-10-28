@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   GitBranch,
   GitCommit,
@@ -79,7 +80,10 @@ export function ProjectGitAnalyticsPanel({
   const [disputeComment, setDisputeComment] = useState('');
   const [disputingId, setDisputingId] = useState<number | null>(null);
 
-  const webhookUrl = `${window.location.protocol}//${window.location.host}/api/v1/webhooks/github`;
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+  const webhookUrl = apiBase.endsWith('/api/v1')
+    ? `${apiBase.replace(/\/api\/v1$/, '')}/api/v1/webhooks/github`
+    : `${apiBase}/webhooks/github`;
 
   useEffect(() => {
     loadAnalytics();
@@ -503,104 +507,115 @@ export function ProjectGitAnalyticsPanel({
       </div>
 
       {/* --- CONNECT GITHUB REPOSITORY MODAL --- */}
-      {showConnectModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <GitBranch className="w-4 h-4 text-indigo-600" />
-                <h4 className="font-bold text-slate-900 text-sm">Connect GitHub Repository</h4>
-              </div>
-              <button
-                onClick={() => setShowConnectModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConnectRepo} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  GitHub Repository Full Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={repoFullName}
-                  onChange={(e) => setRepoFullName(e.target.value)}
-                  placeholder="e.g. your-org/project-repo"
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
-                />
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Format: <code>owner/repository-name</code> on GitHub
-                </p>
+      {showConnectModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div
+              className="fixed inset-0"
+              onClick={() => setShowConnectModal(false)}
+            />
+            <div className="relative bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150">
+              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GitBranch className="w-4 h-4 text-indigo-600" />
+                  <h4 className="font-bold text-slate-900 text-sm">Connect GitHub Repository</h4>
+                </div>
+                <button
+                  onClick={() => setShowConnectModal(false)}
+                  className="text-slate-400 hover:text-slate-700 p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Webhook Secret (Optional / Recommended)
-                </label>
-                <input
-                  type="text"
-                  value={webhookSecret}
-                  onChange={(e) => setWebhookSecret(e.target.value)}
-                  placeholder="Enter custom HMAC secret or leave blank for auto-generate"
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
-                />
-              </div>
+              <form onSubmit={handleConnectRepo} className="p-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    GitHub Repository Full Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={repoFullName}
+                    onChange={(e) => setRepoFullName(e.target.value)}
+                    placeholder="e.g. your-org/project-repo"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Format: <code>owner/repository-name</code> on GitHub
+                  </p>
+                </div>
 
-              {/* Webhook Setup Instructions */}
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-700">GitHub Webhook Payload URL:</span>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Webhook Secret (Optional / Recommended)
+                  </label>
+                  <input
+                    type="text"
+                    value={webhookSecret}
+                    onChange={(e) => setWebhookSecret(e.target.value)}
+                    placeholder="Enter custom HMAC secret or leave blank for auto-generate"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
+                  />
+                </div>
+
+                {/* Webhook Setup Instructions */}
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-700">GitHub Webhook Payload URL:</span>
+                    <button
+                      type="button"
+                      onClick={copyWebhookUrl}
+                      className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:underline"
+                    >
+                      {copiedUrl ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      {copiedUrl ? 'Copied' : 'Copy URL'}
+                    </button>
+                  </div>
+                  <code className="block p-2.5 bg-white border border-slate-200 rounded-lg font-mono text-[11px] text-slate-800 break-all select-all font-medium">
+                    {webhookUrl}
+                  </code>
+
+                  <div className="text-slate-600 space-y-1 text-[11px] pt-1">
+                    <p>1. In GitHub, go to <b>Repository Settings &gt; Webhooks &gt; Add webhook</b>.</p>
+                    <p>2. Paste the <b>Payload URL</b> above.</p>
+                    <p>3. Set <b>Content type</b> to <code>application/json</code>.</p>
+                    <p>4. Under events, check <b>Pushes</b> and <b>Pull requests</b>.</p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
                   <button
                     type="button"
-                    onClick={copyWebhookUrl}
-                    className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:underline"
+                    onClick={() => setShowConnectModal(false)}
+                    className="px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900"
                   >
-                    {copiedUrl ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                    {copiedUrl ? 'Copied' : 'Copy URL'}
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingRepo}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 disabled:opacity-50"
+                  >
+                    {savingRepo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                    Save Repository Connection
                   </button>
                 </div>
-                <code className="block p-2.5 bg-white border border-slate-200 rounded-lg font-mono text-[11px] text-slate-800 break-all select-all font-medium">
-                  {webhookUrl}
-                </code>
-
-                <div className="text-slate-600 space-y-1 text-[11px] pt-1">
-                  <p>1. In GitHub, go to <b>Repository Settings &gt; Webhooks &gt; Add webhook</b>.</p>
-                  <p>2. Paste the <b>Payload URL</b> above.</p>
-                  <p>3. Set <b>Content type</b> to <code>application/json</code>.</p>
-                  <p>4. Under events, check <b>Pushes</b> and <b>Pull requests</b>.</p>
-                </div>
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowConnectModal(false)}
-                  className="px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingRepo}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 disabled:opacity-50"
-                >
-                  {savingRepo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                  Save Repository Connection
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* --- DEVELOPER SCORECARD MODAL --- */}
-      {scorecardDevId && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      {scorecardDevId &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div
+              className="fixed inset-0"
+              onClick={() => setScorecardDevId(null)}
+            />
+            <div className="relative bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10 animate-in zoom-in-95 duration-150">
             <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
@@ -760,18 +775,24 @@ export function ProjectGitAnalyticsPanel({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- SIMULATE WEBHOOK MODAL --- */}
-      {showSimulateModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Play className="w-4 h-4 text-indigo-600" />
-                <h4 className="font-bold text-slate-900 text-sm">Simulate GitHub Webhook Event</h4>
-              </div>
+      {showSimulateModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div
+              className="fixed inset-0"
+              onClick={() => setShowSimulateModal(false)}
+            />
+            <div className="relative bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150">
+              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Play className="w-4 h-4 text-indigo-600" />
+                  <h4 className="font-bold text-slate-900 text-sm">Simulate GitHub Webhook Event</h4>
+                </div>
               <button
                 onClick={() => setShowSimulateModal(false)}
                 className="text-slate-400 hover:text-slate-700 p-1"
@@ -897,7 +918,8 @@ export function ProjectGitAnalyticsPanel({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

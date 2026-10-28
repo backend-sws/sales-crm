@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Hash,
   Lock,
@@ -992,99 +993,107 @@ export function ProjectChatSlack({ projectId, projectTitle, teamMembers }: Proje
       </div>
 
       {/* --- CODE SNIPPET MODAL --- */}
-      {showCodeModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Code className="w-4 h-4 text-indigo-600" />
-                <h4 className="font-bold text-slate-900 text-sm">Share Code Snippet</h4>
+      {showCodeModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div
+              className="fixed inset-0"
+              onClick={() => setShowCodeModal(false)}
+            />
+            <div className="relative bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col z-10 animate-in zoom-in-95 duration-150">
+              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Code className="w-4 h-4 text-indigo-600" />
+                  <h4 className="font-bold text-slate-900 text-sm">Share Code Snippet</h4>
+                </div>
+                <button
+                  onClick={() => setShowCodeModal(false)}
+                  className="text-slate-400 hover:text-slate-700 p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
+
+              <div className="p-4 space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Language</label>
+                  <select
+                    value={codeLanguage}
+                    onChange={(e) => setCodeLanguage(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                  >
+                    <option value="typescript">TypeScript</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="php">PHP</option>
+                    <option value="python">Python</option>
+                    <option value="sql">SQL</option>
+                    <option value="html">HTML / CSS</option>
+                    <option value="json">JSON</option>
+                    <option value="bash">Bash / Shell</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Code</label>
+                  <textarea
+                    rows={8}
+                    value={codeText}
+                    onChange={(e) => setCodeText(e.target.value)}
+                    placeholder="// Paste your code snippet here..."
+                    className="w-full font-mono bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-emerald-300 focus:outline-none focus:border-indigo-500 leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-slate-200 bg-slate-50/70 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setShowCodeModal(false)}
+                  className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (!codeText.trim()) {
+                      toast.error('Code snippet cannot be empty');
+                      return;
+                    }
+                    setShowCodeModal(false);
+                    toast.success('Snippet attached to composer!');
+                  }}
+                  className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm shadow-indigo-600/20"
+                >
+                  Attach Snippet
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* --- IMAGE LIGHTBOX MODAL --- */}
+      {activeLightboxImg &&
+        createPortal(
+          <div
+            onClick={() => setActiveLightboxImg(null)}
+            className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-6 cursor-zoom-out animate-in fade-in duration-200"
+          >
+            <div className="relative max-w-4xl max-h-[90vh]">
+              <img
+                src={activeLightboxImg}
+                alt="Enlarged preview"
+                className="max-h-[85vh] w-auto rounded-xl shadow-2xl object-contain bg-white"
+              />
               <button
-                onClick={() => setShowCodeModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-1"
+                onClick={() => setActiveLightboxImg(null)}
+                className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-slate-100 shadow-md transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            <div className="p-4 space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Language</label>
-                <select
-                  value={codeLanguage}
-                  onChange={(e) => setCodeLanguage(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
-                >
-                  <option value="typescript">TypeScript</option>
-                  <option value="javascript">JavaScript</option>
-                  <option value="php">PHP</option>
-                  <option value="python">Python</option>
-                  <option value="sql">SQL</option>
-                  <option value="html">HTML / CSS</option>
-                  <option value="json">JSON</option>
-                  <option value="bash">Bash / Shell</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Code</label>
-                <textarea
-                  rows={8}
-                  value={codeText}
-                  onChange={(e) => setCodeText(e.target.value)}
-                  placeholder="// Paste your code snippet here..."
-                  className="w-full font-mono bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-emerald-300 focus:outline-none focus:border-indigo-500 leading-relaxed"
-                />
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-slate-200 bg-slate-50/70 flex items-center justify-end gap-2">
-              <button
-                onClick={() => setShowCodeModal(false)}
-                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (!codeText.trim()) {
-                    toast.error('Code snippet cannot be empty');
-                    return;
-                  }
-                  setShowCodeModal(false);
-                  toast.success('Snippet attached to composer!');
-                }}
-                className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm shadow-indigo-600/20"
-              >
-                Attach Snippet
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- IMAGE LIGHTBOX MODAL --- */}
-      {activeLightboxImg && (
-        <div
-          onClick={() => setActiveLightboxImg(null)}
-          className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-6 cursor-zoom-out"
-        >
-          <div className="relative max-w-4xl max-h-[90vh]">
-            <img
-              src={activeLightboxImg}
-              alt="Enlarged preview"
-              className="max-h-[85vh] w-auto rounded-xl shadow-2xl object-contain bg-white"
-            />
-            <button
-              onClick={() => setActiveLightboxImg(null)}
-              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-slate-100 shadow-md transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
