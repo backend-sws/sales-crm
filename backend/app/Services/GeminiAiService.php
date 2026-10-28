@@ -19,7 +19,8 @@ class GeminiAiService implements AiAssistantServiceInterface
 
     public function __construct()
     {
-        $this->apiKey = env('GEMINI_API_KEY');
+        $this->apiKey = \App\Models\AppSetting::get('gemini_api_key', env('GEMINI_API_KEY'));
+        $this->model = \App\Models\AppSetting::get('gemini_model', 'gemini-1.5-flash');
     }
 
     /**
@@ -171,12 +172,13 @@ Respond in JSON with key:
      */
     protected function queryGeminiJson(string $prompt): ?array
     {
-        if (empty($this->apiKey)) {
+        $key = \App\Models\AppSetting::get('gemini_api_key', $this->apiKey);
+        if (empty($key)) {
             return null;
         }
 
         try {
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$key}";
 
             $response = Http::timeout(10)->post($url, [
                 'contents' => [

@@ -237,6 +237,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/admin/feedback/{id}/resolve-dispute', [PerformanceController::class, 'resolveDispute']);
         Route::get('/developers/{id}/performance', [PerformanceController::class, 'developerPerformance']);
         Route::get('/admin/performance/leaderboard', [PerformanceController::class, 'leaderboard']);
+
+        // Settings & Integrations (Gemini AI, GitHub)
+        Route::get('/settings/integrations', [App\Http\Controllers\Api\V1\SettingsController::class, 'index']);
+        Route::post('/settings/integrations', [App\Http\Controllers\Api\V1\SettingsController::class, 'update']);
     });
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Bot,
@@ -13,6 +13,10 @@ import {
   Copy,
   Check,
   Plus,
+  Key,
+  Settings,
+  ExternalLink,
+  X,
 } from 'lucide-react';
 import {
   phase5Api,
@@ -57,6 +61,51 @@ export function ProjectAiInsightsPanel({
   const [momSummaryResult, setMomSummaryResult] = useState<MeetingAiSummary | null>(null);
   const [summarizingMom, setSummarizingMom] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+
+  // Gemini API Key Config State
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [geminiModel, setGeminiModel] = useState('gemini-1.5-flash');
+  const [savingKey, setSavingKey] = useState(false);
+  const [isKeyConfigured, setIsKeyConfigured] = useState(false);
+
+  useEffect(() => {
+    phase5Api.getIntegrationSettings().then((res) => {
+      if (res && res.gemini) {
+        setIsKeyConfigured(res.gemini.is_configured);
+        if (res.gemini.model) setGeminiModel(res.gemini.model);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleSaveGeminiKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!geminiApiKey.trim()) {
+      toast.error('Please enter a valid Gemini API key.');
+      return;
+    }
+
+    try {
+      setSavingKey(true);
+      const res = await phase5Api.updateIntegrationSettings({
+        gemini_api_key: geminiApiKey.trim(),
+        gemini_model: geminiModel,
+      });
+
+      if (res.test_status === 'connected') {
+        toast.success('Google Gemini 1.5 Flash connected successfully!');
+      } else {
+        toast.warning('Key saved, but Google returned an error during connection test. Ensure key is valid.');
+      }
+      setIsKeyConfigured(true);
+      setShowKeyModal(false);
+      setGeminiApiKey('');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to save Gemini API key.');
+    } finally {
+      setSavingKey(false);
+    }
+  };
 
   // 1. Generate Task Breakdown
   const handleGenerateBreakdown = async (e: React.FormEvent) => {
@@ -170,38 +219,48 @@ export function ProjectAiInsightsPanel({
           </div>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setActiveTab('breakdown')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-              activeTab === 'breakdown'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            onClick={() => setShowKeyModal(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition shadow-sm"
           >
-            Task Breakdown
+            <Key className="w-3.5 h-3.5 text-amber-400" />
+            {isKeyConfigured ? 'Gemini Key Configured' : 'Configure Free Gemini Key'}
           </button>
-          <button
-            onClick={() => setActiveTab('sprint_risk')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-              activeTab === 'sprint_risk'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Sprint Health
-          </button>
-          <button
-            onClick={() => setActiveTab('mom_summary')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-              activeTab === 'mom_summary'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            MoM Summarizer
-          </button>
+
+          {/* Tab Switcher */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setActiveTab('breakdown')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                activeTab === 'breakdown'
+                  ? 'bg-primary-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Task Breakdown
+            </button>
+            <button
+              onClick={() => setActiveTab('sprint_risk')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                activeTab === 'sprint_risk'
+                  ? 'bg-primary-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Sprint Health
+            </button>
+            <button
+              onClick={() => setActiveTab('mom_summary')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                activeTab === 'mom_summary'
+                  ? 'bg-primary-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              MoM Summarizer
+            </button>
+          </div>
         </div>
       </div>
 
@@ -503,6 +562,89 @@ export function ProjectAiInsightsPanel({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* --- CONFIGURE GEMINI API KEY MODAL --- */}
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-amber-400" />
+                <h4 className="font-semibold text-slate-100 text-sm">Configure Google Gemini AI Key</h4>
+              </div>
+              <button
+                onClick={() => setShowKeyModal(false)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveGeminiKey} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Google Gemini API Key (Free Tier)
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-primary-500 font-mono"
+                />
+                <div className="flex items-center justify-between mt-1 text-[11px]">
+                  <span className="text-slate-500">Free tier quota: 15 RPM / 1M TPM</span>
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary-400 hover:underline flex items-center gap-1"
+                  >
+                    Get Free Key from Google AI Studio <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Gemini Model</label>
+                <select
+                  value={geminiModel}
+                  onChange={(e) => setGeminiModel(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-primary-500"
+                >
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recommended - Fastest & Free)</option>
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                </select>
+              </div>
+
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                <p>• Your key is securely stored in <code>app_settings</code> table.</p>
+                <p>• If offline or quota exhausted, the system automatically falls back to analytical heuristics.</p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowKeyModal(false)}
+                  className="px-3 py-2 text-xs text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingKey}
+                  className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-md shadow-primary-900/30 disabled:opacity-50"
+                >
+                  {savingKey ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  Test Connection & Save Key
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

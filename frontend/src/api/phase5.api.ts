@@ -244,6 +244,20 @@ export interface DeveloperPerformanceTelemetry {
   feedbacks: FeedbackItem[];
 }
 
+export interface IntegrationSettingsResponse {
+  gemini: {
+    is_configured: boolean;
+    masked_key?: string | null;
+    model: string;
+  };
+  github: {
+    is_configured: boolean;
+    default_org: string;
+    has_secret: boolean;
+    webhook_url: string;
+  };
+}
+
 export const phase5Api = {
   // Storage & Direct Uploads
   requestPresignedUpload: async (params: {
@@ -252,7 +266,7 @@ export const phase5Api = {
     file_size_bytes: number;
     folder?: string;
   }): Promise<PresignedUploadResponse> => {
-    const res = await api.post("/v1/storage/presigned-upload", params);
+    const res = await api.post("/storage/presigned-upload", params);
     return res.data.data;
   },
 
@@ -261,7 +275,7 @@ export const phase5Api = {
     formData.append("file", file);
     if (folder) formData.append("folder", folder);
 
-    const res = await api.post("/v1/storage/upload-direct", formData, {
+    const res = await api.post("/storage/upload-direct", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data.data;
@@ -269,28 +283,28 @@ export const phase5Api = {
 
   // Slack Project Chat
   getChannels: async (projectId: number): Promise<ProjectChannelItem[]> => {
-    const res = await api.get(`/v1/projects/${projectId}/channels`);
+    const res = await api.get(`/projects/${projectId}/channels`);
     return res.data.data;
   },
 
   getMessages: async (channelId: number, perPage: number = 50): Promise<{ data: ProjectMessageItem[] }> => {
-    const res = await api.get(`/v1/channels/${channelId}/messages?per_page=${perPage}`);
+    const res = await api.get(`/channels/${channelId}/messages?per_page=${perPage}`);
     return res.data;
   },
 
   sendMessage: async (channelId: number, payload: SendMessagePayload): Promise<ProjectMessageItem> => {
-    const res = await api.post(`/v1/channels/${channelId}/messages`, payload);
+    const res = await api.post(`/channels/${channelId}/messages`, payload);
     return res.data.data;
   },
 
   toggleReaction: async (messageId: number, emoji: string): Promise<{ action: string; reactions: MessageReactionItem[] }> => {
-    const res = await api.post(`/v1/messages/${messageId}/react`, { emoji });
+    const res = await api.post(`/messages/${messageId}/react`, { emoji });
     return res.data.data;
   },
 
   // GitHub Integration & Git Analytics
   linkRepo: async (projectId: number, repoFullName: string, secret?: string) => {
-    const res = await api.post(`/v1/projects/${projectId}/github/link`, {
+    const res = await api.post(`/projects/${projectId}/github/link`, {
       repo_full_name: repoFullName,
       webhook_secret: secret,
     });
@@ -298,33 +312,33 @@ export const phase5Api = {
   },
 
   getGitAnalytics: async (projectId: number): Promise<GitAnalyticsResponse> => {
-    const res = await api.get(`/v1/projects/${projectId}/github/analytics`);
+    const res = await api.get(`/projects/${projectId}/github/analytics`);
     return res.data.data;
   },
 
   simulateGitWebhook: async (projectId: number, payload: SimulateWebhookPayload) => {
-    const res = await api.post(`/v1/projects/${projectId}/github/simulate-webhook`, payload);
+    const res = await api.post(`/projects/${projectId}/github/simulate-webhook`, payload);
     return res.data.data;
   },
 
   // Gemini AI Assistant
   getLeadSuggestions: async (leadId: number): Promise<LeadAiSuggestions> => {
-    const res = await api.get(`/v1/ai/leads/${leadId}/suggestions`);
+    const res = await api.get(`/ai/leads/${leadId}/suggestions`);
     return res.data.data;
   },
 
   summarizeMeetingNotes: async (meetingId: number, notes?: string): Promise<MeetingAiSummary> => {
-    const res = await api.post(`/v1/ai/meetings/${meetingId}/summarize`, { notes });
+    const res = await api.post(`/ai/meetings/${meetingId}/summarize`, { notes });
     return res.data.data;
   },
 
   getSprintRisk: async (sprintId: number): Promise<SprintAiRiskAssessment> => {
-    const res = await api.get(`/v1/ai/sprints/${sprintId}/risk-assessment`);
+    const res = await api.get(`/ai/sprints/${sprintId}/risk-assessment`);
     return res.data.data;
   },
 
   generateTaskBreakdown: async (projectId: number, requirement: string): Promise<TaskBreakdownResponse> => {
-    const res = await api.post(`/v1/ai/projects/${projectId}/generate-tasks`, { requirement });
+    const res = await api.post(`/ai/projects/${projectId}/generate-tasks`, { requirement });
     return res.data.data;
   },
 
@@ -338,24 +352,40 @@ export const phase5Api = {
     would_work_again?: boolean;
     comment?: string;
   }): Promise<FeedbackItem> => {
-    const res = await api.post(`/v1/feedback/tasks/${taskId}`, data);
+    const res = await api.post(`/feedback/tasks/${taskId}`, data);
     return res.data.data;
   },
 
   disputeFeedback: async (feedbackId: number, reason: string): Promise<FeedbackItem> => {
-    const res = await api.post(`/v1/feedback/${feedbackId}/dispute`, { reason });
+    const res = await api.post(`/feedback/${feedbackId}/dispute`, { reason });
     return res.data.data;
   },
 
   getDeveloperPerformance: async (developerId: number, period?: string): Promise<DeveloperPerformanceTelemetry> => {
-    const url = period ? `/v1/developers/${developerId}/performance?period=${period}` : `/v1/developers/${developerId}/performance`;
+    const url = period ? `/developers/${developerId}/performance?period=${period}` : `/developers/${developerId}/performance`;
     const res = await api.get(url);
     return res.data.data;
   },
 
   getPerformanceLeaderboard: async (period?: string) => {
-    const url = period ? `/v1/admin/performance/leaderboard?period=${period}` : `/v1/admin/performance/leaderboard`;
+    const url = period ? `/admin/performance/leaderboard?period=${period}` : `/admin/performance/leaderboard`;
     const res = await api.get(url);
+    return res.data.data;
+  },
+
+  // Settings & Integrations
+  getIntegrationSettings: async (): Promise<IntegrationSettingsResponse> => {
+    const res = await api.get('/settings/integrations');
+    return res.data.data;
+  },
+
+  updateIntegrationSettings: async (data: {
+    gemini_api_key?: string;
+    gemini_model?: string;
+    github_default_org?: string;
+    github_webhook_secret?: string;
+  }): Promise<{ test_status?: string }> => {
+    const res = await api.post('/settings/integrations', data);
     return res.data.data;
   },
 };

@@ -78,8 +78,11 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
       setLoadingChannels(true);
       const data = await phase5Api.getChannels(projectId);
       setChannels(data);
-      if (data.length > 0 && !activeChannel) {
-        setActiveChannel(data[0]);
+      if (data && data.length > 0) {
+        setActiveChannel((prev) => {
+          if (!prev) return data[0];
+          return data.find((c) => c.id === prev.id) || data[0];
+        });
       }
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to load chat channels.');
@@ -88,10 +91,23 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
     }
   };
 
-  // 2. Load Messages when Active Channel Changes
+  // 2. Load Messages when Active Channel Changes + Real-time Polling
   useEffect(() => {
     if (!activeChannel) return;
     loadMessages(activeChannel.id);
+
+    // Silent background poll every 3.5 seconds for instant Slack-like experience
+    const interval = setInterval(async () => {
+      try {
+        const res = await phase5Api.getMessages(activeChannel.id);
+        const ordered = [...(res.data || [])].reverse();
+        setMessages(ordered);
+      } catch {
+        // silent
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
   }, [activeChannel?.id]);
 
   const loadMessages = async (channelId: number) => {
@@ -245,7 +261,7 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-[750px] bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+    <div className="flex flex-col md:flex-row h-[620px] max-h-[calc(100vh-230px)] min-h-[500px] bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
       {/* --- SLACK SIDEBAR (CHANNELS) --- */}
       <div className="w-full md:w-64 bg-slate-900 border-r border-slate-800/80 flex flex-col">
         {/* Workspace Header */}
@@ -566,7 +582,7 @@ export function ProjectChatSlack({ projectId, projectTitle }: ProjectChatSlackPr
         )}
 
         {/* --- MESSAGE COMPOSER --- */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950">
+        <div className="p-3.5 border-t border-slate-800/80 bg-slate-950 shrink-0">
           <form onSubmit={handleSendMessage} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden focus-within:border-primary-500/60 transition shadow-lg">
             <textarea
               rows={2}
