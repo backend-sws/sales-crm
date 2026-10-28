@@ -30,21 +30,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function SuperAdminOnlyRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuthStore();
-  const isSuperAdmin = Boolean(
-    user?.roles?.some((r) => r === 'super_admin' || r === 'superadmin')
-  );
-  if (!isSuperAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return <>{children}</>;
-}
-
 function RootRedirect() {
   const { user } = useAuthStore();
   if (user?.roles?.includes('client')) {
     return <Navigate to="/portal" replace />;
+  }
+  if (user?.roles?.includes('developer')) {
+    return <Navigate to="/projects" replace />;
   }
   return <Navigate to="/dashboard" replace />;
 }
@@ -54,14 +46,47 @@ function DashboardRoute() {
   if (user?.roles?.includes('client')) {
     return <Navigate to="/portal" replace />;
   }
+  if (user?.roles?.includes('developer')) {
+    return <Navigate to="/projects" replace />;
+  }
   return <DashboardPage />;
 }
 
-function StaffOnlyRoute({ children }: { children: React.ReactNode }) {
+function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore();
-  if (user?.roles?.includes('client')) {
-    return <Navigate to="/portal" replace />;
+  const isSuperAdmin = Boolean(
+    user?.roles?.some((r) => r === 'super_admin' || r === 'superadmin')
+  );
+  if (!isSuperAdmin) {
+    if (user?.roles?.includes('client')) return <Navigate to="/portal" replace />;
+    if (user?.roles?.includes('developer')) return <Navigate to="/projects" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
+  return <>{children}</>;
+}
+
+function PermissionGuardRoute({
+  permissions,
+  children,
+}: {
+  permissions: string[];
+  children: React.ReactNode;
+}) {
+  const { user, hasPermission } = useAuthStore();
+  const isSuperAdmin = Boolean(
+    user?.roles?.some((r) => r === 'super_admin' || r === 'superadmin')
+  );
+  if (isSuperAdmin) {
+    return <>{children}</>;
+  }
+
+  const hasAny = permissions.some((p) => hasPermission(p));
+  if (!hasAny) {
+    if (user?.roles?.includes('client')) return <Navigate to="/portal" replace />;
+    if (user?.roles?.includes('developer')) return <Navigate to="/projects" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -86,20 +111,90 @@ export default function App() {
           >
             <Route index element={<RootRedirect />} />
             <Route path="/dashboard" element={<DashboardRoute />} />
-            <Route path="/leads" element={<StaffOnlyRoute><LeadsPage /></StaffOnlyRoute>} />
-            <Route path="/leads/analytics" element={<StaffOnlyRoute><LeadsAnalyticsPage /></StaffOnlyRoute>} />
-            <Route path="/follow-ups" element={<StaffOnlyRoute><FollowUpsPage /></StaffOnlyRoute>} />
-            <Route path="/clients" element={<StaffOnlyRoute><ClientsPage /></StaffOnlyRoute>} />
-            <Route path="/clients/:id" element={<StaffOnlyRoute><ClientDetailPage /></StaffOnlyRoute>} />
-            <Route path="/clients/:id/portal" element={<StaffOnlyRoute><ClientPortalPage /></StaffOnlyRoute>} />
+            <Route
+              path="/leads"
+              element={
+                <PermissionGuardRoute permissions={['leads.view_all', 'leads.view_own']}>
+                  <LeadsPage />
+                </PermissionGuardRoute>
+              }
+            />
+            <Route
+              path="/leads/analytics"
+              element={
+                <PermissionGuardRoute permissions={['analytics.view_company', 'analytics.view_team', 'analytics.view_own']}>
+                  <LeadsAnalyticsPage />
+                </PermissionGuardRoute>
+              }
+            />
+            <Route
+              path="/follow-ups"
+              element={
+                <PermissionGuardRoute permissions={['followups.view_all', 'followups.view_own']}>
+                  <FollowUpsPage />
+                </PermissionGuardRoute>
+              }
+            />
+            <Route
+              path="/clients"
+              element={
+                <PermissionGuardRoute permissions={['clients.view_all', 'clients.view_own']}>
+                  <ClientsPage />
+                </PermissionGuardRoute>
+              }
+            />
+            <Route
+              path="/clients/:id"
+              element={
+                <PermissionGuardRoute permissions={['clients.view_all', 'clients.view_own']}>
+                  <ClientDetailPage />
+                </PermissionGuardRoute>
+              }
+            />
+            <Route
+              path="/clients/:id/portal"
+              element={
+                <PermissionGuardRoute permissions={['clients.view_all', 'clients.view_own']}>
+                  <ClientPortalPage />
+                </PermissionGuardRoute>
+              }
+            />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
             <Route path="/portal" element={<ClientPortalPage />} />
             <Route path="/client/dashboard" element={<Navigate to="/portal" replace />} />
-            <Route path="/admin/users" element={<StaffOnlyRoute><AdminUsersPage /></StaffOnlyRoute>} />
-            <Route path="/admin/audit-logs" element={<StaffOnlyRoute><AdminAuditLogsPage /></StaffOnlyRoute>} />
-            <Route path="/system-status" element={<StaffOnlyRoute><SystemStatusPage /></StaffOnlyRoute>} />
-            <Route path="/settings" element={<SuperAdminOnlyRoute><SettingsPage /></SuperAdminOnlyRoute>} />
+            <Route
+              path="/admin/users"
+              element={
+                <AdminOnlyRoute>
+                  <AdminUsersPage />
+                </AdminOnlyRoute>
+              }
+            />
+            <Route
+              path="/admin/audit-logs"
+              element={
+                <AdminOnlyRoute>
+                  <AdminAuditLogsPage />
+                </AdminOnlyRoute>
+              }
+            />
+            <Route
+              path="/system-status"
+              element={
+                <AdminOnlyRoute>
+                  <SystemStatusPage />
+                </AdminOnlyRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <AdminOnlyRoute>
+                  <SettingsPage />
+                </AdminOnlyRoute>
+              }
+            />
             <Route path="/admin/settings" element={<Navigate to="/settings" replace />} />
           </Route>
 

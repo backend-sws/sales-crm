@@ -26,7 +26,7 @@ class ProjectController extends BaseApiController
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['client_id', 'pm_id', 'status', 'search']);
-        $projects = $this->projectService->listProjects($filters);
+        $projects = $this->projectService->listProjects($filters, $request->user());
 
         return $this->successResponse($projects, 'Projects retrieved successfully.');
     }
@@ -37,9 +37,9 @@ class ProjectController extends BaseApiController
         security: [["bearerAuth" => []]],
         tags: ["Projects"]
     )]
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
-        $detail = $this->projectService->getProjectDetail($id);
+        $detail = $this->projectService->getProjectDetail($id, $request->user());
 
         return $this->successResponse($detail, 'Project details loaded successfully.');
     }

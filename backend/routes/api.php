@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\AiController;
 use App\Http\Controllers\Api\V1\ChatController;
 use App\Http\Controllers\Api\V1\GitHubWebhookController;
 use App\Http\Controllers\Api\V1\PerformanceController;
+use App\Http\Controllers\Api\V1\RolePermissionController;
 use App\Http\Controllers\Api\V1\StorageController;
 use Illuminate\Support\Facades\Route;
 
@@ -116,16 +117,26 @@ Route::prefix('v1')->group(function () {
         Route::get('/analytics/funnel', [AnalyticsController::class, 'funnel']);
         Route::get('/analytics/agents/{id}', [AnalyticsController::class, 'agentScorecard']);
 
-        // Admin User Management & Impersonation (Phase 2)
-        Route::get('/admin/users', [AdminUserController::class, 'index']);
-        Route::post('/admin/users', [AdminUserController::class, 'store']);
-        Route::patch('/admin/users/{id}', [AdminUserController::class, 'update']);
-        Route::get('/admin/teams', [AdminUserController::class, 'teams']);
+        // Impersonation Exit (Called by active impersonated session)
         Route::post('/admin/impersonate/exit', [ImpersonationController::class, 'exit']);
-        Route::post('/admin/impersonate/{user}', [ImpersonationController::class, 'start']);
-        Route::get('/admin/impersonation-logs', [ImpersonationController::class, 'logs']);
-        Route::get('/admin/audit-logs', [AuditLogController::class, 'index']);
-        Route::get('/admin/audit-logs/export', [AuditLogController::class, 'export']);
+
+        // Admin User Management & Impersonation (Super Admin Only)
+        Route::middleware(['role:super_admin'])->group(function () {
+            Route::get('/admin/users', [AdminUserController::class, 'index']);
+            Route::post('/admin/users', [AdminUserController::class, 'store']);
+            Route::patch('/admin/users/{id}', [AdminUserController::class, 'update']);
+            Route::get('/admin/teams', [AdminUserController::class, 'teams']);
+            Route::post('/admin/impersonate/{user}', [ImpersonationController::class, 'start']);
+            Route::get('/admin/impersonation-logs', [ImpersonationController::class, 'logs']);
+            Route::get('/admin/audit-logs', [AuditLogController::class, 'index']);
+            Route::get('/admin/audit-logs/export', [AuditLogController::class, 'export']);
+            Route::get('/admin/roles-permissions', [RolePermissionController::class, 'index']);
+            Route::post('/admin/roles-permissions/sync', [RolePermissionController::class, 'sync']);
+            Route::get('/admin/performance/leaderboard', [PerformanceController::class, 'leaderboard']);
+            Route::post('/admin/feedback/{id}/resolve-dispute', [PerformanceController::class, 'resolveDispute']);
+            Route::get('/settings/integrations', [App\Http\Controllers\Api\V1\SettingsController::class, 'index']);
+            Route::post('/settings/integrations', [App\Http\Controllers\Api\V1\SettingsController::class, 'update']);
+        });
 
         // Scheduled Reports & Data Exports (Phase 2)
         Route::get('/reports/scheduled', [ReportController::class, 'index']);
@@ -168,8 +179,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/projects', [ProjectController::class, 'store']);
         Route::get('/projects/{id}', [ProjectController::class, 'show']);
         Route::patch('/projects/{id}', [ProjectController::class, 'update']);
-        Route::get('/projects/{id}/budget', [ProjectController::class, 'budget']);
-        Route::get('/projects/{id}/capacity', [ProjectController::class, 'capacity']);
+        Route::get('/projects/{id}/budget', [ProjectController::class, 'budget'])->middleware('role:super_admin|project_manager');
+        Route::get('/projects/{id}/capacity', [ProjectController::class, 'capacity'])->middleware('role:super_admin|project_manager');
         Route::post('/projects/{id}/milestones', [ProjectController::class, 'storeMilestone']);
         Route::post('/milestones/{milestoneId}/invoice', [ProjectController::class, 'invoiceMilestone']);
 
@@ -235,13 +246,7 @@ Route::prefix('v1')->group(function () {
         // Multi-Signal Developer Performance & Feedback (Phase 5)
         Route::post('/feedback/tasks/{id}', [PerformanceController::class, 'submitTaskFeedback']);
         Route::post('/feedback/{id}/dispute', [PerformanceController::class, 'dispute']);
-        Route::post('/admin/feedback/{id}/resolve-dispute', [PerformanceController::class, 'resolveDispute']);
         Route::get('/developers/{id}/performance', [PerformanceController::class, 'developerPerformance']);
-        Route::get('/admin/performance/leaderboard', [PerformanceController::class, 'leaderboard']);
-
-        // Settings & Integrations (Gemini AI, GitHub)
-        Route::get('/settings/integrations', [App\Http\Controllers\Api\V1\SettingsController::class, 'index']);
-        Route::post('/settings/integrations', [App\Http\Controllers\Api\V1\SettingsController::class, 'update']);
     });
 });
 

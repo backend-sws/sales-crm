@@ -9,9 +9,9 @@ use App\Models\User;
 
 interface ProjectServiceInterface
 {
-    public function listProjects(array $filters = []): array;
+    public function listProjects(array $filters = [], ?User $user = null): array;
 
-    public function getProjectDetail(int $projectId): array;
+    public function getProjectDetail(int $projectId, ?User $user = null): array;
 
     public function createProject(array $data, User $creator): Project;
 

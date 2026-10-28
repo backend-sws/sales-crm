@@ -54,6 +54,18 @@ export interface ScheduledReportItem {
   };
 }
 
+export interface RoleItem {
+  id: number;
+  name: string;
+}
+
+export interface RolesPermissionsResponseData {
+  roles: RoleItem[];
+  matrix: Record<string, string[]>;
+  categories: Record<string, Record<string, string>>;
+  total_permissions: number;
+}
+
 export const adminApi = {
   /**
    * Fetch all users for Admin management.
@@ -150,6 +162,28 @@ export const adminApi = {
    */
   async triggerGenerateReport(id: number): Promise<ApiResponse<ScheduledReportItem>> {
     const response = await api.post<ApiResponse<ScheduledReportItem>>(`/reports/scheduled/${id}/generate`);
+    return response.data;
+  },
+
+  /**
+   * Fetch complete RBAC matrix (SuperAdmin only).
+   */
+  async getRolesPermissions(): Promise<ApiResponse<RolesPermissionsResponseData>> {
+    const response = await api.get<ApiResponse<RolesPermissionsResponseData>>('/admin/roles-permissions');
+    return response.data;
+  },
+
+  /**
+   * Synchronize role permissions.
+   */
+  async syncRolePermissions(payload: {
+    role: string;
+    permissions: string[];
+  }): Promise<ApiResponse<{ role: string; permissions: string[] }>> {
+    const response = await api.post<ApiResponse<{ role: string; permissions: string[] }>>(
+      '/admin/roles-permissions/sync',
+      payload
+    );
     return response.data;
   },
 };

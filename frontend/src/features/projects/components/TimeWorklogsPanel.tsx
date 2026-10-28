@@ -10,6 +10,7 @@ interface TimeWorklogsPanelProps {
   tasks: TaskItem[];
   onRefresh: () => void;
   isClientView?: boolean;
+  hideCosts?: boolean;
 }
 
 export function TimeWorklogsPanel({
@@ -17,7 +18,9 @@ export function TimeWorklogsPanel({
   tasks,
   onRefresh,
   isClientView = false,
+  hideCosts = false,
 }: TimeWorklogsPanelProps) {
+  const showCosts = !isClientView && !hideCosts;
   const [worklogs, setWorklogs] = useState<TimeEntryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -99,7 +102,7 @@ export function TimeWorklogsPanel({
           </div>
         </div>
 
-        {!isClientView && (
+        {showCosts && (
           <div className="p-4 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 flex items-center justify-between">
             <div>
               <span className="text-[11px] font-semibold text-slate-400">Total Labor Cost</span>
@@ -150,7 +153,7 @@ export function TimeWorklogsPanel({
                   <th className="py-2.5 px-4">Team Member</th>
                   <th className="py-2.5 px-4">Date &amp; Time</th>
                   <th className="py-2.5 px-4">Duration</th>
-                  {!isClientView && <th className="py-2.5 px-4">Cost</th>}
+                  {showCosts && <th className="py-2.5 px-4">Cost</th>}
                   <th className="py-2.5 px-4">Type</th>
                   <th className="py-2.5 px-4">Description</th>
                 </tr>
@@ -178,7 +181,7 @@ export function TimeWorklogsPanel({
                     <td className="py-2.5 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
                       {entry.hours} hrs
                     </td>
-                    {!isClientView && (
+                    {showCosts && (
                       <td className="py-2.5 px-4 font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                         ₹{(entry.cost || 0).toLocaleString('en-IN')}
                       </td>

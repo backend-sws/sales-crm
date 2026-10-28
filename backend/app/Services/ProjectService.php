@@ -13,8 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class ProjectService implements ProjectServiceInterface
 {
-    public function listProjects(array $filters = []): array
+    public function listProjects(array $filters = [], ?User $user = null): array
     {
+        $user = $user ?? auth()->user();
+
         $query = Project::with([
             'client:id,name,company,email',
             'projectManager:id,name,email,avatar',
@@ -23,6 +25,20 @@ class ProjectService implements ProjectServiceInterface
             'tasks',
             'tasks as completed_tasks_count' => fn($q) => $q->where('status', 'done'),
         ]);
+
+        // Scoping based on user role
+        if ($user) {
+            if ($user->hasRole('client')) {
+                // Client only sees their own organization's projects
+                $query->where('client_id', $user->client_id);
+            } elseif ($user->hasRole('developer') && ! $user->hasAnyRole(['super_admin', 'project_manager'])) {
+                // Developer only sees projects where they have assigned tasks or are PM
+                $query->where(function ($q) use ($user) {
+                    $q->whereHas('tasks', fn($t) => $t->where('assignee_id', $user->id))
+                      ->orWhere('pm_id', $user->id);
+                });
+            }
+        }
 
         if (!empty($filters['client_id'])) {
             $query->where('client_id', $filters['client_id']);
@@ -46,8 +62,9 @@ class ProjectService implements ProjectServiceInterface
 
         $projects = $query->latest()->get();
 
-        return $projects->map(function ($project) {
-            $budget = $this->getBudgetSnapshot($project);
+        return $projects->map(function ($project) use ($user) {
+            $isInternalManager = ! $user || $user->hasAnyRole(['super_admin', 'project_manager']);
+            $budget = $isInternalManager ? $this->getBudgetSnapshot($project) : null;
             $totalTasks = $project->tasks_count ?? 0;
             $completedTasks = $project->completed_tasks_count ?? 0;
             $progressPercent = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
@@ -62,8 +79,8 @@ class ProjectService implements ProjectServiceInterface
                 'active_sprint'           => $project->sprints->first(),
                 'start_date'              => $project->start_date?->toDateString(),
                 'target_end_date'         => $project->target_end_date?->toDateString(),
-                'total_value'             => (float) $project->total_value,
-                'total_budget'            => (float) $project->total_budget,
+                'total_value'             => $isInternalManager ? (float) $project->total_value : null,
+                'total_budget'            => $isInternalManager ? (float) $project->total_budget : null,
                 'tasks_count'             => $totalTasks,
                 'completed_tasks_count'   => $completedTasks,
                 'progress_percent'        => $progressPercent,
@@ -73,8 +90,10 @@ class ProjectService implements ProjectServiceInterface
         })->toArray();
     }
 
-    public function getProjectDetail(int $projectId): array
+    public function getProjectDetail(int $projectId, ?User $user = null): array
     {
+        $user = $user ?? auth()->user();
+
         $project = Project::with([
             'client.branding',
             'service',
@@ -92,8 +111,30 @@ class ProjectService implements ProjectServiceInterface
             'invoices' => fn($q) => $q->latest(),
         ])->findOrFail($projectId);
 
-        $budgetSnapshot = $this->getBudgetSnapshot($project);
-        $capacityMatrix = $this->getCapacityMatrix($project);
+        if ($user) {
+            if ($user->hasRole('client') && $project->client_id !== $user->client_id) {
+                throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException("You are not authorized to view this project.");
+            }
+            if ($user->hasRole('developer') && ! $user->hasAnyRole(['super_admin', 'project_manager'])) {
+                $hasTask = $project->tasks()->where('assignee_id', $user->id)->exists();
+                if (! $hasTask && $project->pm_id !== $user->id) {
+                    throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException("You are not assigned to this project.");
+                }
+            }
+        }
+
+        $isInternalManager = ! $user || $user->hasAnyRole(['super_admin', 'project_manager']);
+        $budgetSnapshot = $isInternalManager ? $this->getBudgetSnapshot($project) : null;
+        $capacityMatrix = $isInternalManager ? $this->getCapacityMatrix($project) : [];
+
+        // Hide hourly_rate on assignees for non-managers
+        if (! $isInternalManager) {
+            $project->tasks->each(function ($t) {
+                if ($t->assignee) {
+                    $t->assignee->makeHidden(['hourly_rate']);
+                }
+            });
+        }
 
         $totalTasks = $project->tasks->count();
         $completedTasks = $project->tasks->where('status', 'done')->count();
@@ -109,8 +150,8 @@ class ProjectService implements ProjectServiceInterface
             'project_manager'      => $project->projectManager,
             'start_date'           => $project->start_date?->toDateString(),
             'target_end_date'      => $project->target_end_date?->toDateString(),
-            'total_value'          => (float) $project->total_value,
-            'total_budget'         => (float) $project->total_budget,
+            'total_value'          => $isInternalManager ? (float) $project->total_value : null,
+            'total_budget'         => $isInternalManager ? (float) $project->total_budget : null,
             'sprint_duration_days' => $project->sprint_duration_days,
             'progress_percent'     => $progressPercent,
             'milestones'           => $project->milestones,

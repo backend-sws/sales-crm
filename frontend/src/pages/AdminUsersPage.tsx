@@ -13,6 +13,7 @@ import {
   Phone,
   Mail,
   ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, type AdminUserItem } from '@/api/admin.api';
@@ -23,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { RolePermissionsMatrixPanel } from '@/features/admin/components/RolePermissionsMatrixPanel';
 
 const ROLE_OPTIONS = [
   { value: 'sales_agent', label: 'Sales Agent (Field / Tele-caller)', color: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30' },
@@ -37,6 +39,7 @@ export default function AdminUsersPage() {
   const navigate = useNavigate();
   const { user: currentUser, impersonate } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'rbac'>('users');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [impersonatingId, setImpersonatingId] = useState<number | null>(null);
 
@@ -150,7 +153,7 @@ export default function AdminUsersPage() {
           </p>
         </div>
 
-        {isSuperAdmin && (
+        {isSuperAdmin && activeAdminTab === 'users' && (
           <Button
             type="button"
             onClick={() => setIsCreateOpen(true)}
@@ -161,7 +164,38 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {/* KPI Stats Grid */}
+      {/* Admin Section Tabs */}
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+        <button
+          type="button"
+          onClick={() => setActiveAdminTab('users')}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeAdminTab === 'users'
+              ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/80 dark:border-slate-700'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Team Members Directory ({users.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveAdminTab('rbac')}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeAdminTab === 'rbac'
+              ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/80 dark:border-slate-700'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+          Role &amp; Permissions Matrix Governance
+        </button>
+      </div>
+
+      {activeAdminTab === 'users' ? (
+        <>
+          {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200 dark:border-white/10 shadow-xs">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
@@ -356,6 +390,10 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </div>
+        </>
+      ) : (
+        <RolePermissionsMatrixPanel />
+      )}
 
       {/* Add User Modal */}
       <Modal

@@ -55,7 +55,11 @@ export default function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useState<ProjectTab>('kanban');
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
 
-  const isClient = user?.roles?.includes('client');
+  const isSuperAdmin = Boolean(user?.roles?.some((r) => r === 'super_admin' || r === 'superadmin'));
+  const isProjectManager = Boolean(user?.roles?.includes('project_manager'));
+  const isDeveloper = Boolean(user?.roles?.includes('developer'));
+  const isSales = Boolean(user?.roles?.some((r) => r === 'sales_agent' || r === 'sales_manager'));
+  const isClient = Boolean(user?.roles?.includes('client'));
 
   const fetchProjectDetails = useCallback(async () => {
     if (!projectId) return;
@@ -125,7 +129,7 @@ export default function ProjectDetailPage() {
   const isAlert = project.budget_snapshot?.is_alert_threshold;
   const isOver = project.budget_snapshot?.is_over_budget;
 
-  const tabs: { key: ProjectTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  const allTabs: { key: ProjectTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { key: 'kanban', label: 'Kanban Board', icon: Columns3 },
     { key: 'sprints', label: 'Sprints & Burndown', icon: Flame },
     { key: 'gantt', label: 'Gantt Timeline', icon: CalendarDays },
@@ -137,6 +141,28 @@ export default function ProjectDetailPage() {
     { key: 'git', label: 'Git & Analytics', icon: GitBranch },
     { key: 'ai', label: 'Gemini AI', icon: Sparkles },
   ];
+
+  const tabs = allTabs.filter((tab) => {
+    if (tab.key === 'budget') {
+      return isSuperAdmin || isProjectManager;
+    }
+    if (tab.key === 'ai') {
+      return isSuperAdmin || isProjectManager;
+    }
+    if (tab.key === 'time') {
+      return !isClient;
+    }
+    if (tab.key === 'git') {
+      return !isClient && !(isSales && !isSuperAdmin && !isProjectManager);
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some((t) => t.key === activeTab)) {
+      setActiveTab(tabs[0].key);
+    }
+  }, [tabs, activeTab]);
 
   return (
     <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-20">
@@ -203,41 +229,43 @@ export default function ProjectDetailPage() {
 
         {/* Header Right Actions & Budget Consumption Badge */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 min-w-[200px]">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-500 flex items-center gap-1 font-medium">
-                Budget Consumed
-                {isOver ? (
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
-                ) : isAlert ? (
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                ) : null}
-              </span>
-              <span
-                className={`font-black ${
-                  isOver
-                    ? 'text-rose-500'
-                    : isAlert
-                    ? 'text-amber-500'
-                    : 'text-slate-900 dark:text-white'
-                }`}
-              >
-                {budgetPercent}%
-              </span>
+          {(isSuperAdmin || isProjectManager) && (
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 min-w-[200px]">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 flex items-center gap-1 font-medium">
+                  Budget Consumed
+                  {isOver ? (
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                  ) : isAlert ? (
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  ) : null}
+                </span>
+                <span
+                  className={`font-black ${
+                    isOver
+                      ? 'text-rose-500'
+                      : isAlert
+                      ? 'text-amber-500'
+                      : 'text-slate-900 dark:text-white'
+                  }`}
+                >
+                  {budgetPercent}%
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isOver ? 'bg-rose-500' : isAlert ? 'bg-amber-500' : 'bg-indigo-500'
+                  }`}
+                  style={{ width: `${Math.min(budgetPercent, 100)}%` }}
+                />
+              </div>
+              <div className="text-[11px] text-slate-400 flex justify-between">
+                <span>Cost: ₹{Number(project.budget_snapshot?.actual_cost || 0).toLocaleString('en-IN')}</span>
+                <span>Total: ₹{Number(project.total_value || 0).toLocaleString('en-IN')}</span>
+              </div>
             </div>
-            <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  isOver ? 'bg-rose-500' : isAlert ? 'bg-amber-500' : 'bg-indigo-500'
-                }`}
-                style={{ width: `${Math.min(budgetPercent, 100)}%` }}
-              />
-            </div>
-            <div className="text-[11px] text-slate-400 flex justify-between">
-              <span>Cost: ₹{Number(project.budget_snapshot?.actual_cost || 0).toLocaleString('en-IN')}</span>
-              <span>Total: ₹{Number(project.total_value || 0).toLocaleString('en-IN')}</span>
-            </div>
-          </div>
+          )}
 
           <button
             onClick={() => setShowCreateTaskModal(true)}
@@ -300,16 +328,17 @@ export default function ProjectDetailPage() {
           />
         )}
 
-        {activeTab === 'time' && (
+        {activeTab === 'time' && !isClient && (
           <TimeWorklogsPanel
             projectId={projectId}
             tasks={project.tasks || []}
             onRefresh={fetchProjectDetails}
             isClientView={isClient}
+            hideCosts={!isSuperAdmin && !isProjectManager}
           />
         )}
 
-        {activeTab === 'budget' && (
+        {activeTab === 'budget' && (isSuperAdmin || isProjectManager) && (
           <ProjectBudgetPanel
             budget={project.budget_snapshot}
             capacity={project.capacity_matrix || []}
@@ -351,7 +380,7 @@ export default function ProjectDetailPage() {
           />
         )}
 
-        {activeTab === 'ai' && (
+        {activeTab === 'ai' && (isSuperAdmin || isProjectManager) && (
           <ProjectAiInsightsPanel
             projectId={projectId}
             projectTitle={project.name}

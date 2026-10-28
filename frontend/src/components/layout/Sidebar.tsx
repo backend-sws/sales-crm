@@ -25,29 +25,70 @@ import { useAuthStore } from "@/store/authStore";
 import { followUpsApi } from "@/api/followUps.api";
 import { queryKeys } from "@/constants/queryKeys";
 
+export interface MenuItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badgeType?: string;
+  superAdminOnly?: boolean;
+  requiredPermission?: string | string[];
+  allowedRoles?: string[];
+}
+
 export const crmMenuGroups = [
   {
     title: "SALES OPERATIONS",
     items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Follow-Up Center", href: "/follow-ups", icon: Zap, badgeType: "followups" },
-      { name: "Deals & Leads", href: "/leads", icon: TrendingUp },
-      { name: "Pipeline & Forecast", href: "/leads/analytics", icon: BarChart3 },
+      {
+        name: "Dashboard",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+        allowedRoles: ["super_admin", "sales_manager", "sales_agent", "project_manager", "account_manager"],
+      },
+      {
+        name: "Follow-Up Center",
+        href: "/follow-ups",
+        icon: Zap,
+        badgeType: "followups",
+        requiredPermission: ["followups.view_all", "followups.view_own"],
+      },
+      {
+        name: "Deals & Leads",
+        href: "/leads",
+        icon: TrendingUp,
+        requiredPermission: ["leads.view_all", "leads.view_own"],
+      },
+      {
+        name: "Pipeline & Forecast",
+        href: "/leads/analytics",
+        icon: BarChart3,
+        requiredPermission: ["analytics.view_company", "analytics.view_team", "analytics.view_own"],
+      },
     ],
   },
   {
     title: "CLIENT SUCCESS & SERVICES",
     items: [
-      { name: "Clients & Retainers", href: "/clients", icon: Briefcase },
-      { name: "Projects & Sprints", href: "/projects", icon: FolderKanban },
+      {
+        name: "Clients & Retainers",
+        href: "/clients",
+        icon: Briefcase,
+        requiredPermission: ["clients.view_all", "clients.view_own"],
+      },
+      {
+        name: "Projects & Sprints",
+        href: "/projects",
+        icon: FolderKanban,
+        requiredPermission: ["projects.view_all", "projects.view_assigned"],
+      },
     ],
   },
   {
     title: "ADMINISTRATION",
     items: [
-      { name: "Team & Access Control", href: "/admin/users", icon: Users },
-      { name: "Audit Trail Explorer", href: "/admin/audit-logs", icon: ShieldCheck },
-      { name: "API & System Health", href: "/system-status", icon: Activity },
+      { name: "Team & Access Control", href: "/admin/users", icon: Users, superAdminOnly: true },
+      { name: "Audit Trail Explorer", href: "/admin/audit-logs", icon: ShieldCheck, superAdminOnly: true },
+      { name: "API & System Health", href: "/system-status", icon: Activity, superAdminOnly: true },
       { name: "Settings", href: "/settings", icon: Settings, superAdminOnly: true },
     ],
   },
@@ -150,10 +191,25 @@ export function Sidebar({ className = "" }: { className?: string }) {
   const activeMenuGroups = baseMenuGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item: any) => {
-        if (item.superAdminOnly && !isSuperAdmin) {
-          return false;
+      items: group.items.filter((item: MenuItem) => {
+        if (isSuperAdmin) return true;
+        if (item.superAdminOnly) return false;
+
+        // Check allowedRoles if defined
+        if (item.allowedRoles && item.allowedRoles.length > 0) {
+          const hasRole = user?.roles?.some((r) => item.allowedRoles!.includes(r));
+          if (!hasRole) return false;
         }
+
+        // Check requiredPermission if defined
+        if (item.requiredPermission) {
+          const perms = Array.isArray(item.requiredPermission)
+            ? item.requiredPermission
+            : [item.requiredPermission];
+          const hasPerm = perms.some((p) => user?.permissions?.includes(p));
+          if (!hasPerm) return false;
+        }
+
         return true;
       }),
     }))
