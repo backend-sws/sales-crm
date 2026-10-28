@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   FolderKanban,
@@ -102,6 +102,46 @@ export default function ProjectDetailPage() {
       });
   }, []);
 
+  const allTabs: { key: ProjectTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = useMemo(
+    () => [
+      { key: 'kanban', label: 'Kanban Board', icon: Columns3 },
+      { key: 'sprints', label: 'Sprints & Burndown', icon: Flame },
+      { key: 'gantt', label: 'Gantt Timeline', icon: CalendarDays },
+      { key: 'time', label: 'Time & Worklogs', icon: Clock },
+      { key: 'budget', label: 'Budget & Capacity', icon: TrendingUp },
+      { key: 'scope', label: 'Scope Governance & CR', icon: ShieldCheck },
+      { key: 'meetings', label: 'Meetings & MoM', icon: Calendar },
+      { key: 'chat', label: 'Slack Chat', icon: MessageSquare },
+      { key: 'git', label: 'Git & Analytics', icon: GitBranch },
+      { key: 'ai', label: 'Gemini AI', icon: Sparkles },
+    ],
+    []
+  );
+
+  const tabs = useMemo(() => {
+    return allTabs.filter((tab) => {
+      if (tab.key === 'budget') {
+        return isSuperAdmin || isProjectManager;
+      }
+      if (tab.key === 'ai') {
+        return isSuperAdmin || isProjectManager;
+      }
+      if (tab.key === 'time') {
+        return !isClient;
+      }
+      if (tab.key === 'git') {
+        return !isClient && !(isSales && !isSuperAdmin && !isProjectManager);
+      }
+      return true;
+    });
+  }, [allTabs, isSuperAdmin, isProjectManager, isClient, isSales]);
+
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some((t) => t.key === activeTab)) {
+      setActiveTab(tabs[0].key);
+    }
+  }, [tabs, activeTab]);
+
   if (loading && !project) {
     return (
       <div className="w-full h-96 flex items-center justify-center text-slate-400">
@@ -128,41 +168,6 @@ export default function ProjectDetailPage() {
   const budgetPercent = project.budget_snapshot?.budget_consumed_percent || 0;
   const isAlert = project.budget_snapshot?.is_alert_threshold;
   const isOver = project.budget_snapshot?.is_over_budget;
-
-  const allTabs: { key: ProjectTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { key: 'kanban', label: 'Kanban Board', icon: Columns3 },
-    { key: 'sprints', label: 'Sprints & Burndown', icon: Flame },
-    { key: 'gantt', label: 'Gantt Timeline', icon: CalendarDays },
-    { key: 'time', label: 'Time & Worklogs', icon: Clock },
-    { key: 'budget', label: 'Budget & Capacity', icon: TrendingUp },
-    { key: 'scope', label: 'Scope Governance & CR', icon: ShieldCheck },
-    { key: 'meetings', label: 'Meetings & MoM', icon: Calendar },
-    { key: 'chat', label: 'Slack Chat', icon: MessageSquare },
-    { key: 'git', label: 'Git & Analytics', icon: GitBranch },
-    { key: 'ai', label: 'Gemini AI', icon: Sparkles },
-  ];
-
-  const tabs = allTabs.filter((tab) => {
-    if (tab.key === 'budget') {
-      return isSuperAdmin || isProjectManager;
-    }
-    if (tab.key === 'ai') {
-      return isSuperAdmin || isProjectManager;
-    }
-    if (tab.key === 'time') {
-      return !isClient;
-    }
-    if (tab.key === 'git') {
-      return !isClient && !(isSales && !isSuperAdmin && !isProjectManager);
-    }
-    return true;
-  });
-
-  useEffect(() => {
-    if (tabs.length > 0 && !tabs.some((t) => t.key === activeTab)) {
-      setActiveTab(tabs[0].key);
-    }
-  }, [tabs, activeTab]);
 
   return (
     <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-20">
