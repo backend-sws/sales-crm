@@ -19,6 +19,12 @@ import { clientsApi, type ClientItem } from '@/api/clients.api';
 import type { Lead } from '@/types/lead.types';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import {
+  INDIAN_STATES,
+  INDIAN_UTS,
+  INDIAN_STATES_AND_UTS,
+  getGstLabelForState,
+} from '@/constants/indianStates';
 
 interface ConvertLeadModalProps {
   isOpen: boolean;
@@ -261,7 +267,18 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
                   <input
                     type="text"
                     value={formData.gst_number}
-                    onChange={(e) => setFormData({ ...formData, gst_number: e.target.value.toUpperCase() })}
+                    onChange={(e) => {
+                      const upper = e.target.value.toUpperCase();
+                      let nextState = formData.billing_state;
+                      if (upper.length >= 2) {
+                        const code = upper.substring(0, 2);
+                        const matched = INDIAN_STATES_AND_UTS.find((s) => s.code === code);
+                        if (matched) {
+                          nextState = matched.name;
+                        }
+                      }
+                      setFormData({ ...formData, gst_number: upper, billing_state: nextState });
+                    }}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium uppercase focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-mono"
                     placeholder="27ABCDE1234F1Z5"
                   />
@@ -269,22 +286,30 @@ export const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                    Billing State * (For Indian GST)
+                    Billing State / UT * (For Indian GST)
                   </label>
                   <select
                     value={formData.billing_state}
                     onChange={(e) => setFormData({ ...formData, billing_state: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   >
-                    <option value="Maharashtra">Maharashtra (Intra-state: CGST 9% + SGST 9%)</option>
-                    <option value="Karnataka">Karnataka (Inter-state: IGST 18%)</option>
-                    <option value="Delhi">Delhi (Inter-state: IGST 18%)</option>
-                    <option value="Tamil Nadu">Tamil Nadu (Inter-state: IGST 18%)</option>
-                    <option value="Gujarat">Gujarat (Inter-state: IGST 18%)</option>
-                    <option value="Telangana">Telangana (Inter-state: IGST 18%)</option>
-                    <option value="Uttar Pradesh">Uttar Pradesh (Inter-state: IGST 18%)</option>
-                    <option value="West Bengal">West Bengal (Inter-state: IGST 18%)</option>
-                    <option value="Other">Other State (IGST 18%)</option>
+                    <optgroup label="── 28 States ──">
+                      {INDIAN_STATES.map((state) => (
+                        <option key={state.name} value={state.name}>
+                          {getGstLabelForState(state)}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="── 8 Union Territories ──">
+                      {INDIAN_UTS.map((ut) => (
+                        <option key={ut.name} value={ut.name}>
+                          {getGstLabelForState(ut)}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="── Other / International ──">
+                      <option value="Other">Other State / Overseas (IGST 18%)</option>
+                    </optgroup>
                   </select>
                 </div>
               </div>
