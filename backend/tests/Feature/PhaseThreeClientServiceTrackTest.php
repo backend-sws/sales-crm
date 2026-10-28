@@ -355,6 +355,36 @@ class PhaseThreeClientServiceTrackTest extends TestCase
             ->assertJsonPath('data.company', 'Malhotra Media');
     }
 
+    public function test_can_create_direct_client_with_fixed_scope_service(): void
+    {
+        $payload = [
+            'name'          => 'Rohit Verma',
+            'company'       => 'Verma Technologies',
+            'email'         => 'rohit@vermatech.com',
+            'phone'         => '9876543210',
+            'billing_state' => 'Karnataka',
+            'service_name'  => 'Fixed Scope Deliverable MVP',
+            'service_type'  => 'fixed_scope',
+            'billing_cycle' => 'milestone',
+            'service_value' => 50000,
+            'create_user'   => true,
+            'password'      => 'Client@123',
+        ];
+
+        $res = $this->actingAs($this->admin, 'sanctum')
+            ->postJson('/api/v1/clients', $payload);
+
+        $res->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.company', 'Verma Technologies');
+
+        $this->assertDatabaseHas('client_services', [
+            'service_name'  => 'Fixed Scope Deliverable MVP',
+            'service_type'  => 'fixed_scope',
+            'billing_cycle' => 'milestone',
+        ]);
+    }
+
     public function test_artisan_phase_three_commands_run_cleanly(): void
     {
         $exitCodeInvoices = Artisan::call('billing:generate-retainer-invoices');

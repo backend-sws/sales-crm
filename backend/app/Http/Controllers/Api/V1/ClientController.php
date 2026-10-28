@@ -55,7 +55,7 @@ class ClientController extends BaseApiController
             'billing_state'      => 'nullable|string|max:100',
             'account_manager_id' => 'nullable|exists:users,id',
             'service_name'       => 'nullable|string|max:255',
-            'service_type'       => 'nullable|string|in:recurring,fixed_scope,maintenance',
+            'service_type'       => 'nullable|string|in:recurring,fixed_scope,maintenance,one_time,software_project',
             'billing_cycle'      => 'nullable|string|in:monthly,quarterly,yearly,milestone',
             'service_value'      => 'nullable|numeric|min:0',
             'service_notes'      => 'nullable|string',

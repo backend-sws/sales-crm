@@ -48,7 +48,7 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained('clients')->cascadeOnDelete();
             $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
             $table->string('service_name', 255);
-            $table->enum('service_type', ['recurring', 'one_time', 'software_project'])->default('recurring');
+            $table->string('service_type', 50)->default('recurring');
             $table->enum('status', ['active', 'in_progress', 'paused', 'completed'])->default('active');
             $table->date('start_date');
             $table->enum('billing_cycle', ['monthly', 'quarterly', 'yearly', 'milestone'])->default('monthly');
