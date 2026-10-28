@@ -63,7 +63,7 @@ class ProjectService implements ProjectServiceInterface
         $projects = $query->latest()->get();
 
         return $projects->map(function ($project) use ($user) {
-            $isInternalManager = ! $user || $user->hasAnyRole(['super_admin', 'project_manager']);
+            $isInternalManager = ! $user || $user->hasAnyRole(['super_admin', 'project_manager', 'sales_manager', 'account_manager']);
             $budget = $isInternalManager ? $this->getBudgetSnapshot($project) : null;
             $totalTasks = $project->tasks_count ?? 0;
             $completedTasks = $project->completed_tasks_count ?? 0;
@@ -123,7 +123,7 @@ class ProjectService implements ProjectServiceInterface
             }
         }
 
-        $isInternalManager = ! $user || $user->hasAnyRole(['super_admin', 'project_manager']);
+        $isInternalManager = ! $user || $user->hasAnyRole(['super_admin', 'project_manager', 'sales_manager', 'account_manager']);
         $budgetSnapshot = $isInternalManager ? $this->getBudgetSnapshot($project) : null;
         $capacityMatrix = $isInternalManager ? $this->getCapacityMatrix($project) : [];
 

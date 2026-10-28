@@ -57,9 +57,11 @@ export default function ProjectDetailPage() {
 
   const isSuperAdmin = Boolean(user?.roles?.some((r) => r === 'super_admin' || r === 'superadmin'));
   const isProjectManager = Boolean(user?.roles?.includes('project_manager'));
+  const isAccountManager = Boolean(user?.roles?.includes('account_manager'));
   const isDeveloper = Boolean(user?.roles?.includes('developer'));
   const isSales = Boolean(user?.roles?.some((r) => r === 'sales_agent' || r === 'sales_manager'));
   const isClient = Boolean(user?.roles?.includes('client'));
+  const canViewBudget = isSuperAdmin || isProjectManager || isAccountManager;
 
   const fetchProjectDetails = useCallback(async () => {
     if (!projectId) return;
@@ -145,7 +147,7 @@ export default function ProjectDetailPage() {
   const tabs = useMemo(() => {
     return allTabs.filter((tab) => {
       if (tab.key === 'budget') {
-        return isSuperAdmin || isProjectManager;
+        return canViewBudget;
       }
       if (tab.key === 'ai') {
         return isSuperAdmin || isProjectManager;
@@ -158,7 +160,7 @@ export default function ProjectDetailPage() {
       }
       return true;
     });
-  }, [allTabs, isSuperAdmin, isProjectManager, isClient, isSales]);
+  }, [allTabs, canViewBudget, isSuperAdmin, isProjectManager, isClient, isSales]);
 
   useEffect(() => {
     if (tabs.length > 0 && !tabs.some((t) => t.key === activeTab)) {
@@ -368,11 +370,13 @@ export default function ProjectDetailPage() {
           />
         )}
 
-        {activeTab === 'budget' && (isSuperAdmin || isProjectManager) && (
+        {activeTab === 'budget' && canViewBudget && (
           <ProjectBudgetPanel
+            projectId={projectId}
             budget={project.budget_snapshot}
             capacity={project.capacity_matrix || []}
             isClientView={isClient}
+            onRefresh={fetchProjectDetails}
           />
         )}
 

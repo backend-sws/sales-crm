@@ -179,8 +179,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/projects', [ProjectController::class, 'store']);
         Route::get('/projects/{id}', [ProjectController::class, 'show']);
         Route::patch('/projects/{id}', [ProjectController::class, 'update']);
-        Route::get('/projects/{id}/budget', [ProjectController::class, 'budget'])->middleware('role:super_admin|project_manager');
-        Route::get('/projects/{id}/capacity', [ProjectController::class, 'capacity'])->middleware('role:super_admin|project_manager');
+        Route::get('/projects/{id}/budget', [ProjectController::class, 'budget'])->middleware('role:super_admin|project_manager|sales_manager|account_manager');
+        Route::get('/projects/{id}/capacity', [ProjectController::class, 'capacity'])->middleware('role:super_admin|project_manager|sales_manager|account_manager');
         Route::post('/projects/{id}/milestones', [ProjectController::class, 'storeMilestone']);
         Route::post('/milestones/{milestoneId}/invoice', [ProjectController::class, 'invoiceMilestone']);
 
