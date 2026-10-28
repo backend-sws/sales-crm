@@ -192,6 +192,7 @@ export interface ScopeVersionItem {
     id: number;
     signer_name: string;
     signature_data: string;
+    signature_type?: 'drawn' | 'typed';
     ip_address?: string;
     approved_at: string;
     user?: { id: number; name: string };

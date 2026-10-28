@@ -379,6 +379,7 @@ export default function ProjectDetailPage() {
         {activeTab === 'scope' && (
           <ScopeGovernancePanel
             projectId={projectId}
+            project={project}
             scopeVersions={scopeVersions}
             changeRequests={changeRequests}
             onRefresh={fetchProjectDetails}
