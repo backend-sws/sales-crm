@@ -44,12 +44,14 @@ interface ProjectGitAnalyticsPanelProps {
   projectId: number;
   projectTitle: string;
   tasks?: TaskItem[];
+  isClientView?: boolean;
 }
 
 export function ProjectGitAnalyticsPanel({
   projectId,
   projectTitle,
   tasks = [],
+  isClientView = false,
 }: ProjectGitAnalyticsPanelProps) {
   const [analytics, setAnalytics] = useState<GitAnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -232,18 +234,27 @@ export function ProjectGitAnalyticsPanel({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setShowConnectModal(true)}
-            className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition shadow-xs"
-          >
-            <Settings className="w-3.5 h-3.5 text-indigo-600" /> Connect GitHub Repo
-          </button>
-          <button
-            onClick={() => setShowSimulateModal(true)}
-            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition"
-          >
-            <Play className="w-3.5 h-3.5 fill-current" /> Simulate Commit / PR
-          </button>
+          {!isClientView && (
+            <>
+              <button
+                onClick={() => setShowConnectModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition shadow-xs"
+              >
+                <Settings className="w-3.5 h-3.5 text-indigo-600" /> Connect GitHub Repo
+              </button>
+              <button
+                onClick={() => setShowSimulateModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" /> Simulate Commit / PR
+              </button>
+            </>
+          )}
+          {isClientView && (
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Live GitHub Telemetry Active
+            </span>
+          )}
           <button
             onClick={loadAnalytics}
             className="p-2 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition shadow-xs"
@@ -463,7 +474,7 @@ export function ProjectGitAnalyticsPanel({
         <div className="space-y-2">
           {displayedCommits.length === 0 ? (
             <div className="py-8 text-center text-slate-400 text-xs">
-              No commits found. Click "Simulate Commit / PR" to test!
+              {isClientView ? 'No commit activity logged yet for this project.' : 'No commits found. Click "Simulate Commit / PR" to test!'}
             </div>
           ) : (
             displayedCommits.map((commit) => (

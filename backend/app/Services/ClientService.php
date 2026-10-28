@@ -63,6 +63,20 @@ class ClientService implements ClientServiceInterface
             'users:id,name,email,phone,client_id',
             'sourceLead.activities' => fn ($q) => $q->latest()->limit(15),
             'sourceLead.followUps'  => fn ($q) => $q->latest()->limit(10),
+            'projects' => function ($q) {
+                $q->with([
+                    'projectManager:id,name,email,avatar',
+                    'sprints' => fn($sq) => $sq->where('status', 'active')->limit(1),
+                    'milestones' => fn($mq) => $mq->orderBy('target_date')->limit(10),
+                    'meetings' => fn($meq) => $meq->with(['creator:id,name', 'actionItems.assignee:id,name'])->orderBy('scheduled_at', 'desc')->limit(10),
+                    'githubRepo:id,project_id,repo_full_name,is_active',
+                    'channels' => fn($cq) => $cq->where('is_internal', false)->withCount('messages'),
+                ])->withCount([
+                    'tasks',
+                    'tasks as completed_tasks_count' => fn($tq) => $tq->where('status', 'done'),
+                    'tasks as review_tasks_count' => fn($rq) => $rq->where('status', 'in_review'),
+                ]);
+            },
         ])->findOrFail($clientId);
     }
 

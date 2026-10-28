@@ -1,5 +1,6 @@
 import api from '@/lib/api';
 import type { ApiResponse } from '@/types/api.types';
+import type { ProjectItem } from './projects.api';
 
 export interface ClientBranding {
   id: number;
@@ -135,6 +136,7 @@ export interface ClientItem {
   account_manager?: { id: number; name: string; email: string; phone?: string } | null;
   documents?: ClientDocumentItem[];
   invoices?: InvoiceItem[];
+  projects?: ProjectItem[];
   source_lead?: any;
 }
 

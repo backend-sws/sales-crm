@@ -32,5 +32,7 @@ interface ScopeGovernanceServiceInterface
 
     public function confirmMoM(ProjectMeeting $meeting, User $client): ProjectMeeting;
 
+    public function disputeMoM(ProjectMeeting $meeting, string $reason, User $client): ProjectMeeting;
+
     public function convertActionItemToTask(int $actionItemId, User $user): Task;
 }

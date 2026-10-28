@@ -43,6 +43,7 @@ class ClientController extends BaseApiController
         security: [["bearerAuth" => []]],
         tags: ["Clients"]
     )]
+    
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([

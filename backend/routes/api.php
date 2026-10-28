@@ -220,6 +220,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/projects/{projectId}/meetings', [ScopeGovernanceController::class, 'meetings']);
         Route::post('/projects/{projectId}/meetings', [ScopeGovernanceController::class, 'storeMeeting']);
         Route::post('/meetings/{id}/confirm', [ScopeGovernanceController::class, 'confirmMoM']);
+        Route::post('/meetings/{id}/dispute', [ScopeGovernanceController::class, 'disputeMoM']);
         Route::post('/meeting-action-items/{id}/convert', [ScopeGovernanceController::class, 'convertActionItem']);
 
         // Storage & Presigned Direct Uploads (Phase 5)

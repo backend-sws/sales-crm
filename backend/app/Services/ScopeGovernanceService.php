@@ -230,8 +230,22 @@ class ScopeGovernanceService implements ScopeGovernanceServiceInterface
     public function confirmMoM(ProjectMeeting $meeting, User $client): ProjectMeeting
     {
         $meeting->update([
+            'is_auto_accepted'    => true,
+            'client_confirmed_at' => now(),
+            'auto_accepted_at'    => now(),
+            'is_disputed'         => false,
+            'dispute_reason'      => null,
+        ]);
+
+        return $meeting->fresh();
+    }
+
+    public function disputeMoM(ProjectMeeting $meeting, string $reason, User $client): ProjectMeeting
+    {
+        $meeting->update([
             'is_auto_accepted' => false,
-            'auto_accepted_at' => now(),
+            'is_disputed'      => true,
+            'dispute_reason'   => $reason,
         ]);
 
         return $meeting->fresh();

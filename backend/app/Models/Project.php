@@ -95,6 +95,11 @@ class Project extends Model
         return $this->hasMany(GithubRepo::class);
     }
 
+    public function githubRepo(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(GithubRepo::class)->latestOfMany();
+    }
+
     public function channels(): HasMany
     {
         return $this->hasMany(ProjectChannel::class);

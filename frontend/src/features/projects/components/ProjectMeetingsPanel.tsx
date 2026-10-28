@@ -53,6 +53,11 @@ export const ProjectMeetingsPanel: React.FC<ProjectMeetingsPanelProps> = ({
   const [convertingItemId, setConvertingItemId] = useState<number | null>(null);
   const [confirmingMeetingId, setConfirmingMeetingId] = useState<number | null>(null);
 
+  // Dispute MoM State
+  const [disputeModalMeetingId, setDisputeModalMeetingId] = useState<number | null>(null);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
+
   const fetchMeetings = async () => {
     try {
       setLoading(true);
@@ -145,6 +150,29 @@ export const ProjectMeetingsPanel: React.FC<ProjectMeetingsPanelProps> = ({
       toast.error(err.response?.data?.message || 'Failed to confirm MoM');
     } finally {
       setConfirmingMeetingId(null);
+    }
+  };
+
+  const handleDisputeMoM = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!disputeModalMeetingId || !disputeReason.trim()) {
+      toast.error('Please describe your dispute or requested changes.');
+      return;
+    }
+
+    try {
+      setDisputeSubmitting(true);
+      const res = await projectsApi.disputeMoM(disputeModalMeetingId, disputeReason.trim());
+      if (res.success) {
+        toast.success('MoM dispute submitted and flagged for agency review.');
+        setDisputeModalMeetingId(null);
+        setDisputeReason('');
+        fetchMeetings();
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to submit dispute');
+    } finally {
+      setDisputeSubmitting(false);
     }
   };
 
@@ -254,10 +282,15 @@ export const ProjectMeetingsPanel: React.FC<ProjectMeetingsPanelProps> = ({
                           {meeting.status}
                         </span>
 
-                        {meeting.is_auto_accepted ? (
+                        {meeting.is_disputed ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                            <AlertCircle className="w-3 h-3 text-rose-500" />
+                            MoM Dispute Under Review
+                          </span>
+                        ) : meeting.is_auto_accepted || meeting.client_confirmed_at ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
                             <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                            MoM Accepted
+                            {meeting.client_confirmed_at ? 'Accepted by Client' : 'MoM Accepted'}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
@@ -303,18 +336,33 @@ export const ProjectMeetingsPanel: React.FC<ProjectMeetingsPanelProps> = ({
                       </a>
                     )}
 
-                    {!meeting.is_auto_accepted && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleConfirmMoM(meeting.id);
-                        }}
-                        disabled={confirmingMeetingId === meeting.id}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-all"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {confirmingMeetingId === meeting.id ? 'Confirming...' : 'Confirm MoM'}
-                      </button>
+                    {!meeting.is_auto_accepted && !meeting.client_confirmed_at && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleConfirmMoM(meeting.id);
+                          }}
+                          disabled={confirmingMeetingId === meeting.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-all"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {confirmingMeetingId === meeting.id ? 'Confirming...' : 'Confirm MoM'}
+                        </button>
+                        {!meeting.is_disputed && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDisputeModalMeetingId(meeting.id);
+                              setDisputeReason('');
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-semibold shadow-xs transition-all"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                            Dispute MoM
+                          </button>
+                        )}
+                      </div>
                     )}
 
                     <div className="p-1 rounded-lg text-slate-400">
@@ -357,6 +405,19 @@ export const ProjectMeetingsPanel: React.FC<ProjectMeetingsPanelProps> = ({
                         )}
                       </div>
                     </div>
+
+                    {/* Dispute Notes if Raised */}
+                    {meeting.is_disputed && meeting.dispute_reason && (
+                      <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-800 dark:text-rose-200">
+                        <div className="font-bold flex items-center gap-1.5 mb-1.5 text-rose-700 dark:text-rose-300">
+                          <AlertCircle className="w-4 h-4 text-rose-500" />
+                          Client Dispute / Requested Changes:
+                        </div>
+                        <p className="leading-relaxed bg-white/70 dark:bg-black/30 p-2.5 rounded-lg border border-rose-200/50 dark:border-rose-900/50">
+                          {meeting.dispute_reason}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Action Items */}
                     <div className="space-y-2.5">
@@ -636,6 +697,53 @@ export const ProjectMeetingsPanel: React.FC<ProjectMeetingsPanelProps> = ({
           </div>
         </form>
       </Modal>
+
+      {/* Dispute MoM Modal */}
+      {disputeModalMeetingId && (
+        <Modal
+          isOpen={true}
+          onClose={() => setDisputeModalMeetingId(null)}
+          title="Dispute / Request Changes on MoM"
+        >
+          <form onSubmit={handleDisputeMoM} className="space-y-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Please specify the items or deliverables in this Minutes of Meeting (MoM) that you dispute or need clarified. Submitting this dispute will halt 48-hour auto-acceptance and notify your agency team.
+            </p>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Dispute Reason / Clarification Notes <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                required
+                rows={4}
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+                placeholder="e.g. Milestone 2 delivery date discussed was Nov 10th instead of Nov 25th; please adjust the action item..."
+                className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDisputeModalMeetingId(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={disputeSubmitting}
+                className="bg-rose-600 hover:bg-rose-500 text-white gap-1.5"
+              >
+                <AlertCircle className="w-3.5 h-3.5" />
+                {disputeSubmitting ? 'Submitting Dispute...' : 'Submit Dispute'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };

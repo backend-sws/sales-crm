@@ -130,7 +130,7 @@ export default function ProjectDetailPage() {
         return !isClient;
       }
       if (tab.key === 'git') {
-        return !isClient && !(isSales && !isSuperAdmin && !isProjectManager);
+        return !(isSales && !isSuperAdmin && !isProjectManager);
       }
       return true;
     });
@@ -382,6 +382,7 @@ export default function ProjectDetailPage() {
             projectId={projectId}
             projectTitle={project.name}
             tasks={project.tasks || []}
+            isClientView={isClient}
           />
         )}
 

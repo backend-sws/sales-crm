@@ -210,6 +210,8 @@ export interface ChangeRequestItem {
 
 export interface ProjectMeetingItem {
   id: number;
+  project_id?: number;
+  project?: { id: number; name: string };
   title: string;
   agenda?: string | null;
   mom_body?: string | null;
@@ -218,6 +220,9 @@ export interface ProjectMeetingItem {
   status: 'scheduled' | 'completed' | 'cancelled';
   is_auto_accepted: boolean;
   auto_accepted_at?: string | null;
+  is_disputed?: boolean;
+  dispute_reason?: string | null;
+  client_confirmed_at?: string | null;
   creator?: { id: number; name: string };
   action_items?: {
     id: number;
@@ -418,6 +423,11 @@ export const projectsApi = {
 
   confirmMoM: async (meetingId: number) => {
     const res = await api.post(`/meetings/${meetingId}/confirm`);
+    return res.data;
+  },
+
+  disputeMoM: async (meetingId: number, reason: string) => {
+    const res = await api.post(`/meetings/${meetingId}/dispute`, { reason });
     return res.data;
   },
 

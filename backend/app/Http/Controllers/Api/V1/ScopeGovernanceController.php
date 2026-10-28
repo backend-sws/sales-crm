@@ -209,6 +209,24 @@ class ScopeGovernanceController extends BaseApiController
     }
 
     #[OA\Post(
+        path: "/api/v1/meetings/{id}/dispute",
+        summary: "Client disputes or requests clarification on MoM within 48-hour window",
+        security: [["bearerAuth" => []]],
+        tags: ["Scope Governance"]
+    )]
+    public function disputeMoM(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:2000',
+        ]);
+
+        $meeting = ProjectMeeting::findOrFail($id);
+        $disputed = $this->governanceService->disputeMoM($meeting, $validated['reason'], $request->user());
+
+        return $this->successResponse($disputed, 'MoM dispute submitted and flagged for review.');
+    }
+
+    #[OA\Post(
         path: "/api/v1/meeting-action-items/{id}/convert",
         summary: "Convert a meeting action item into a project Task",
         security: [["bearerAuth" => []]],

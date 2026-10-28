@@ -20,14 +20,19 @@ class ProjectMeeting extends Model
         'scheduled_at',
         'status',
         'is_auto_accepted',
+        'is_disputed',
+        'dispute_reason',
+        'client_confirmed_at',
         'auto_accepted_at',
         'created_by',
     ];
 
     protected $casts = [
-        'scheduled_at'     => 'datetime',
-        'is_auto_accepted' => 'boolean',
-        'auto_accepted_at' => 'datetime',
+        'scheduled_at'        => 'datetime',
+        'is_auto_accepted'    => 'boolean',
+        'is_disputed'         => 'boolean',
+        'client_confirmed_at' => 'datetime',
+        'auto_accepted_at'    => 'datetime',
     ];
 
     public function project(): BelongsTo
