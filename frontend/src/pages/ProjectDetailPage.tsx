@@ -339,6 +339,7 @@ export default function ProjectDetailPage() {
           <ProjectChatSlack
             projectId={projectId}
             projectTitle={project.name}
+            teamMembers={users}
           />
         )}
 
