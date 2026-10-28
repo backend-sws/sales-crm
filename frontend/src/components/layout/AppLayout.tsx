@@ -36,11 +36,14 @@ export function AppLayout() {
     }
   }, [token, updateUser]);
 
-  // Strict route redirection guard: Clients MUST only access /portal
+  // Route redirection guard: Clients access /portal and client /projects workspaces
   useEffect(() => {
     if (!isReady || !user) return;
     const isClient = user.roles?.includes('client');
-    if (isClient && !location.pathname.startsWith('/portal')) {
+    const isAllowedClientRoute =
+      location.pathname.startsWith('/portal') ||
+      location.pathname.startsWith('/projects');
+    if (isClient && !isAllowedClientRoute) {
       navigate('/portal', { replace: true });
     }
   }, [isReady, user, location.pathname, navigate]);

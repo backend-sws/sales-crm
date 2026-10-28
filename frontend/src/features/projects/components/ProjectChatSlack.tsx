@@ -91,6 +91,7 @@ export function ProjectChatSlack({ projectId, projectTitle, teamMembers }: Proje
         }))
       );
     } else {
+      if (user?.roles?.includes('client')) return;
       adminApi
         .getUsers()
         .then((res) => {
@@ -108,7 +109,7 @@ export function ProjectChatSlack({ projectId, projectTitle, teamMembers }: Proje
           // ignore
         });
     }
-  }, [teamMembers]);
+  }, [teamMembers, user]);
 
   useEffect(() => {
     if (!messages.length) return;

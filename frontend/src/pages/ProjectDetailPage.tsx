@@ -92,6 +92,30 @@ export default function ProjectDetailPage() {
   }, [fetchProjectDetails]);
 
   useEffect(() => {
+    if (isClient) {
+      if (project) {
+        const team: any[] = [];
+        if (project.project_manager) {
+          team.push({
+            id: project.project_manager.id,
+            name: project.project_manager.name,
+            email: project.project_manager.email,
+          });
+        }
+        (project.tasks || []).forEach((t) => {
+          if (t.assignee && !team.some((m) => m.id === t.assignee!.id)) {
+            team.push({
+              id: t.assignee.id,
+              name: t.assignee.name,
+              email: t.assignee.email,
+            });
+          }
+        });
+        setUsers(team as any);
+      }
+      return;
+    }
+
     adminApi
       .getUsers()
       .then((res) => {
@@ -100,7 +124,7 @@ export default function ProjectDetailPage() {
       .catch(() => {
         // Fallback for non-admin
       });
-  }, []);
+  }, [isClient, project]);
 
   const allTabs: { key: ProjectTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = useMemo(
     () => [
