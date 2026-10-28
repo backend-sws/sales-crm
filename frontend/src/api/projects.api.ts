@@ -98,9 +98,15 @@ export interface TaskAttachmentItem {
   task_id: number;
   file_name: string;
   file_type?: string | null;
+  file_path?: string | null;
   url?: string | null;
   is_proof: boolean;
   notes?: string | null;
+  uploader?: {
+    id: number;
+    name: string;
+    avatar?: string | null;
+  } | null;
   created_at?: string;
 }
 

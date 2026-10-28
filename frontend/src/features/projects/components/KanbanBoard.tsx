@@ -13,11 +13,13 @@ import {
   FileText,
   User as UserIcon,
   Sparkles,
+  Eye,
 } from 'lucide-react';
 import { projectsApi, type TaskItem, type SprintItem, type ProjectMilestoneItem } from '@/api/projects.api';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { AttachProofModal } from './AttachProofModal';
+import { ViewProofModal } from './ViewProofModal';
 import { CreateTaskModal } from './CreateTaskModal';
 import { toast } from 'sonner';
 
@@ -49,6 +51,7 @@ export function KanbanBoard({
   isClientView = false,
 }: KanbanBoardProps) {
   const [selectedTaskForProof, setSelectedTaskForProof] = useState<TaskItem | null>(null);
+  const [selectedTaskToViewProof, setSelectedTaskToViewProof] = useState<TaskItem | null>(null);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [movingTaskId, setMovingTaskId] = useState<number | null>(null);
 
@@ -220,13 +223,21 @@ export function KanbanBoard({
                       {/* Proof of Work Badge & Rework counter */}
                       <div className="flex items-center justify-between text-[10px]">
                         {task.is_proof_attached ? (
-                          <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                            <ShieldCheck className="w-3 h-3" /> Proof Attached
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTaskToViewProof(task)}
+                            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 font-bold border border-emerald-500/20 transition-all hover:scale-105"
+                            title="Click to view attached screenshots, video demo or staging link"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>Proof Attached</span>
+                            <Eye className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          </button>
                         ) : (
                           <button
+                            type="button"
                             onClick={() => setSelectedTaskForProof(task)}
-                            className="text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+                            className="text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-semibold"
                           >
                             <FileText className="w-3 h-3" /> Attach Proof
                           </button>
@@ -253,11 +264,13 @@ export function KanbanBoard({
                         {/* Developer Live Timer Button */}
                         {!isClientView && task.status !== 'done' && (
                           <button
+                            type="button"
                             onClick={() => handleStartTimer(task.id)}
-                            className="p-1 rounded-md text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
-                            title="Start Stopwatch Timer on this task"
+                            className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all border border-transparent hover:border-emerald-500/30"
+                            title="Developer Work Tracker: Start live stopwatch timer on this task to log billable hours"
                           >
-                            <Play className="w-3.5 h-3.5" />
+                            <Play className="w-3 h-3 fill-current" />
+                            <span className="text-[9px] font-bold">Track</span>
                           </button>
                         )}
                       </div>
@@ -479,6 +492,22 @@ export function KanbanBoard({
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* View Proof of Work Modal */}
+      {selectedTaskToViewProof && (
+        <ViewProofModal
+          task={selectedTaskToViewProof}
+          isOpen={!!selectedTaskToViewProof}
+          onClose={() => setSelectedTaskToViewProof(null)}
+          onAttachMore={() => {
+            const task = selectedTaskToViewProof;
+            setSelectedTaskToViewProof(null);
+            setSelectedTaskForProof(task);
+          }}
+          onRefresh={onRefresh}
+          isClientView={isClientView}
+        />
       )}
     </div>
   );

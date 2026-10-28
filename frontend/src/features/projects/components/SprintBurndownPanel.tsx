@@ -18,7 +18,10 @@ import {
   AlertCircle,
   User,
   Check,
+  ShieldCheck,
+  Eye,
 } from 'lucide-react';
+import { ViewProofModal } from './ViewProofModal';
 import {
   ResponsiveContainer,
   LineChart,
@@ -96,6 +99,7 @@ export function SprintBurndownPanel({
     sprints.find((s) => s.status === 'active')?.id || sprints[0]?.id || null
   );
 
+  const [selectedTaskToViewProof, setSelectedTaskToViewProof] = useState<TaskItem | null>(null);
   const [burndown, setBurndown] = useState<BurndownData | null>(null);
   const [loadingBurndown, setLoadingBurndown] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -674,6 +678,19 @@ export function SprintBurndownPanel({
                     </div>
 
                     <div className="flex items-center gap-2.5 shrink-0">
+                      {task.is_proof_attached && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTaskToViewProof(task)}
+                          className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded-md transition-all border border-emerald-500/20"
+                          title="Click to view attached proof"
+                        >
+                          <ShieldCheck className="w-3 h-3" />
+                          <span>Proof</span>
+                          <Eye className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 border border-primary-500/20">
                         {task.story_points || task.estimated_hours || 5} pts
                       </span>
@@ -1046,6 +1063,17 @@ export function SprintBurndownPanel({
           />
         </div>
       </Modal>
+
+      {/* View Proof Modal */}
+      {selectedTaskToViewProof && (
+        <ViewProofModal
+          task={selectedTaskToViewProof}
+          isOpen={!!selectedTaskToViewProof}
+          onClose={() => setSelectedTaskToViewProof(null)}
+          onRefresh={onRefresh}
+          isClientView={isClientView}
+        />
+      )}
     </div>
   );
 }

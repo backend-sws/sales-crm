@@ -21,7 +21,7 @@ class ProjectTaskService implements ProjectTaskServiceInterface
                 'milestone:id,title,status',
                 'dependsOn:id,title,status',
                 'blocking:id,title,status',
-                'attachments',
+                'attachments.uploader:id,name,avatar',
                 'timeEntries.user:id,name',
             ]);
 

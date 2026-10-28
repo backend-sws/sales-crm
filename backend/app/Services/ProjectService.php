@@ -102,7 +102,7 @@ class ProjectService implements ProjectServiceInterface
             'sprints' => fn($q) => $q->orderBy('start_date', 'desc'),
             'tasks.assignee:id,name,email,avatar,hourly_rate',
             'tasks.dependsOn:id,title,status',
-            'tasks.attachments',
+            'tasks.attachments.uploader:id,name,email,avatar',
             'scopeVersions' => fn($q) => $q->orderBy('version_number', 'desc')->with('author:id,name', 'approval'),
             'changeRequests.requester:id,name',
             'changeRequests.decider:id,name',
