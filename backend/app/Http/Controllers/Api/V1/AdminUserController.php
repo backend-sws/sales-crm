@@ -42,6 +42,7 @@ class AdminUserController extends BaseApiController
                     'name'             => $user->name,
                     'email'            => $user->email,
                     'phone'            => $user->phone,
+                    'hourly_rate'      => (float) ($user->hourly_rate ?? 0),
                     'is_active'        => (bool) $user->is_active,
                     'roles'            => $user->roles->pluck('name'),
                     'role'             => $user->roles->first()?->name ?? 'sales_agent',
@@ -63,19 +64,21 @@ class AdminUserController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|max:255|unique:users,email',
-            'phone'    => 'nullable|string|max:50',
-            'password' => 'required|string|min:6',
-            'role'     => 'required|string|exists:roles,name',
+            'name'        => 'required|string|max:255',
+            'email'       => 'required|email|max:255|unique:users,email',
+            'phone'       => 'nullable|string|max:50',
+            'password'    => 'required|string|min:6',
+            'role'        => 'required|string|exists:roles,name',
+            'hourly_rate' => 'nullable|numeric|min:0',
         ]);
 
         $user = User::create([
-            'name'      => $validated['name'],
-            'email'     => $validated['email'],
-            'phone'     => $validated['phone'] ?? null,
-            'password'  => Hash::make($validated['password']),
-            'is_active' => true,
+            'name'        => $validated['name'],
+            'email'       => $validated['email'],
+            'phone'       => $validated['phone'] ?? null,
+            'hourly_rate' => $validated['hourly_rate'] ?? 0,
+            'password'    => Hash::make($validated['password']),
+            'is_active'   => true,
         ]);
 
         $user->assignRole($validated['role']);
@@ -106,15 +109,17 @@ class AdminUserController extends BaseApiController
         $user = User::findOrFail($id);
 
         $validated = $request->validate([
-            'name'      => 'nullable|string|max:255',
-            'phone'     => 'nullable|string|max:50',
-            'is_active' => 'nullable|boolean',
-            'role'      => 'nullable|string|exists:roles,name',
+            'name'        => 'nullable|string|max:255',
+            'phone'       => 'nullable|string|max:50',
+            'is_active'   => 'nullable|boolean',
+            'role'        => 'nullable|string|exists:roles,name',
+            'hourly_rate' => 'nullable|numeric|min:0',
         ]);
 
         if (isset($validated['name'])) $user->name = $validated['name'];
         if (isset($validated['phone'])) $user->phone = $validated['phone'];
         if (isset($validated['is_active'])) $user->is_active = $validated['is_active'];
+        if (isset($validated['hourly_rate'])) $user->hourly_rate = $validated['hourly_rate'];
 
         $user->save();
 

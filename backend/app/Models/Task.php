@@ -19,6 +19,7 @@ class Task extends Model
         'milestone_id',
         'source_type',
         'source_id',
+        'service_request_id',
         'title',
         'description',
         'assignee_id',
@@ -98,6 +99,11 @@ class Task extends Model
     public function feedbackResponses(): HasMany
     {
         return $this->hasMany(FeedbackResponse::class);
+    }
+
+    public function serviceRequest(): BelongsTo
+    {
+        return $this->belongsTo(ServiceRequest::class, 'service_request_id');
     }
 
     public function getActualHoursAttribute(): float

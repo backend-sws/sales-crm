@@ -67,6 +67,46 @@ class ServiceTrackController extends BaseApiController
     }
 
     #[OA\Post(
+        path: "/api/v1/tickets/{id}/accept",
+        summary: "Super Admin accepts genuine ticket, assigns developer, and creates task on Kanban board",
+        security: [["bearerAuth" => []]],
+        tags: ["Service Track"]
+    )]
+    public function acceptTicket(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'assigned_to'     => 'required|exists:users,id',
+            'project_id'      => 'nullable|exists:projects,id',
+            'priority'        => 'nullable|in:low,medium,high,urgent',
+            'kanban_status'   => 'nullable|in:backlog,in_progress',
+            'story_points'    => 'nullable|integer|min:1|max:100',
+            'estimated_hours' => 'nullable|numeric|min:0.5',
+            'due_date'        => 'nullable|date',
+        ]);
+
+        $ticket = $this->serviceTrackService->acceptTicket($id, $validated, $request->user());
+
+        return $this->successResponse($ticket, "Ticket '{$ticket->ticket_number}' accepted and routed to Kanban Board!");
+    }
+
+    #[OA\Post(
+        path: "/api/v1/tickets/{id}/reject",
+        summary: "Super Admin rejects out-of-scope or invalid ticket",
+        security: [["bearerAuth" => []]],
+        tags: ["Service Track"]
+    )]
+    public function rejectTicket(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $ticket = $this->serviceTrackService->rejectTicket($id, $validated['reason'] ?? null, $request->user());
+
+        return $this->successResponse($ticket, "Ticket '{$ticket->ticket_number}' declined and closed.");
+    }
+
+    #[OA\Post(
         path: "/api/v1/tickets/{id}/confirm",
         summary: "Client confirms that ticket is completed satisfactorily",
         security: [["bearerAuth" => []]],

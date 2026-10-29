@@ -136,6 +136,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/admin/feedback/{id}/resolve-dispute', [PerformanceController::class, 'resolveDispute']);
             Route::get('/settings/integrations', [App\Http\Controllers\Api\V1\SettingsController::class, 'index']);
             Route::post('/settings/integrations', [App\Http\Controllers\Api\V1\SettingsController::class, 'update']);
+            Route::get('/settings/banking', [App\Http\Controllers\Api\V1\SettingsController::class, 'getBanking']);
+            Route::post('/settings/banking', [App\Http\Controllers\Api\V1\SettingsController::class, 'updateBanking']);
         });
 
         // Scheduled Reports & Data Exports (Phase 2)
@@ -160,18 +162,25 @@ Route::prefix('v1')->group(function () {
         Route::get('/services/{id}/tickets', [ServiceTrackController::class, 'tickets']);
         Route::post('/services/{id}/tickets', [ServiceTrackController::class, 'createTicket']);
         Route::patch('/tickets/{id}/status', [ServiceTrackController::class, 'updateTicketStatus']);
+        Route::post('/tickets/{id}/accept', [ServiceTrackController::class, 'acceptTicket']);
+        Route::post('/tickets/{id}/reject', [ServiceTrackController::class, 'rejectTicket']);
         Route::post('/tickets/{id}/confirm', [ServiceTrackController::class, 'confirmTicket']);
         Route::post('/services/{id}/reports', [ServiceTrackController::class, 'uploadReport']);
         Route::get('/services/{id}/reports', [ServiceTrackController::class, 'reports']);
 
         // Retainer Billing & Invoices (Phase 3)
         Route::get('/clients/{id}/invoices', [BillingController::class, 'index']);
+        Route::post('/clients/{id}/invoices', [BillingController::class, 'createCustomInvoice']);
+        Route::get('/invoices/{id}', [BillingController::class, 'show']);
+        Route::delete('/invoices/{id}', [BillingController::class, 'destroy']);
         Route::post('/services/{id}/invoices/generate', [BillingController::class, 'generate']);
         Route::patch('/invoices/{id}/mark-paid', [BillingController::class, 'markPaid']);
 
         // Documents & E-Sign (Phase 3)
         Route::get('/clients/{id}/documents', [DocumentController::class, 'index']);
         Route::post('/clients/{id}/documents', [DocumentController::class, 'store']);
+        Route::patch('/documents/{id}', [DocumentController::class, 'update']);
+        Route::delete('/documents/{id}', [DocumentController::class, 'destroy']);
         Route::post('/documents/{id}/sign', [DocumentController::class, 'sign']);
 
         // Projects, Milestones & Budgets (Phase 4)
@@ -230,8 +239,12 @@ Route::prefix('v1')->group(function () {
 
         // Slack Project Chat & Internal Notes (Phase 5)
         Route::get('/projects/{projectId}/channels', [ChatController::class, 'channels']);
+        Route::post('/projects/{projectId}/direct-channel', [ChatController::class, 'directChannel']);
+        Route::get('/projects/{projectId}/chat-presence', [ChatController::class, 'presence']);
+        Route::post('/chat/heartbeat', [ChatController::class, 'heartbeat']);
         Route::get('/channels/{channelId}/messages', [ChatController::class, 'messages']);
         Route::post('/channels/{channelId}/messages', [ChatController::class, 'sendMessage']);
+        Route::post('/channels/{channelId}/read', [ChatController::class, 'markRead']);
         Route::post('/messages/{messageId}/react', [ChatController::class, 'react']);
 
         // GitHub Repository Integration & Git Analytics (Phase 5)

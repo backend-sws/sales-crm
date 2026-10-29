@@ -14,6 +14,8 @@ import {
   Mail,
   ShieldAlert,
   ShieldCheck,
+  Edit2,
+  IndianRupee,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, type AdminUserItem } from '@/api/admin.api';
@@ -50,6 +52,16 @@ export default function AdminUsersPage() {
     phone: '',
     password: 'password123',
     role: 'sales_agent',
+    hourly_rate: '',
+  });
+
+  // Edit User State
+  const [editingUser, setEditingUser] = useState<AdminUserItem | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    phone: '',
+    role: '',
+    hourly_rate: '',
   });
 
   const { data: usersRes, isLoading } = useQuery({
@@ -61,7 +73,15 @@ export default function AdminUsersPage() {
 
   // Create User Mutation
   const createMutation = useMutation({
-    mutationFn: (payload: typeof formData) => adminApi.createUser(payload),
+    mutationFn: (payload: typeof formData) =>
+      adminApi.createUser({
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone || undefined,
+        password: payload.password,
+        role: payload.role,
+        hourly_rate: payload.hourly_rate ? Number(payload.hourly_rate) : 0,
+      }),
     onSuccess: (res) => {
       toast.success(res.message || 'User created successfully.');
       setIsCreateOpen(false);
@@ -71,6 +91,7 @@ export default function AdminUsersPage() {
         phone: '',
         password: 'password123',
         role: 'sales_agent',
+        hourly_rate: '',
       });
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
@@ -78,6 +99,30 @@ export default function AdminUsersPage() {
       toast.error(err.response?.data?.message || 'Failed to create user.');
     },
   });
+
+  // Update User Mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      adminApi.updateUser(id, data),
+    onSuccess: (res) => {
+      toast.success(res.message || 'Team member details updated.');
+      setEditingUser(null);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to update member.');
+    },
+  });
+
+  const openEditModal = (target: AdminUserItem) => {
+    setEditingUser(target);
+    setEditFormData({
+      name: target.name,
+      phone: target.phone || '',
+      role: target.role,
+      hourly_rate: target.hourly_rate ? String(target.hourly_rate) : '',
+    });
+  };
 
   // Toggle Active Mutation
   const toggleActiveMutation = useMutation({
@@ -251,6 +296,7 @@ export default function AdminUsersPage() {
               <tr>
                 <th className="py-3 px-4">Member</th>
                 <th className="py-3 px-4">Role</th>
+                <th className="py-3 px-4">Labor Cost / Rate</th>
                 <th className="py-3 px-4">Active Pipeline</th>
                 <th className="py-3 px-4">Won Revenue</th>
                 <th className="py-3 px-4">Status</th>
@@ -260,13 +306,13 @@ export default function AdminUsersPage() {
             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                  <td colSpan={7} className="py-8 text-center text-slate-400">
                     Loading team members...
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                  <td colSpan={7} className="py-8 text-center text-slate-400">
                     No team members found matching your search.
                   </td>
                 </tr>
@@ -322,6 +368,16 @@ export default function AdminUsersPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
+                        <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                          {item.hourly_rate ? (
+                            `₹${Number(item.hourly_rate).toLocaleString('en-IN')}/hr`
+                          ) : (
+                            <span className="text-slate-400 font-normal">₹0/hr</span>
+                          )}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4">
                         <span className="font-bold text-slate-800 dark:text-slate-200">
                           {item.open_deals_count} open deals
                         </span>
@@ -363,6 +419,18 @@ export default function AdminUsersPage() {
 
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {isSuperAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditModal(item)}
+                              className="h-8 text-xs rounded-xl gap-1 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 cursor-pointer shadow-xs"
+                              title={`Edit ${item.name} details & hourly rate`}
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span>Edit</span>
+                            </Button>
+                          )}
                           {isSuperAdmin && !isCurrent && (
                             <Button
                               size="sm"
@@ -470,17 +538,32 @@ export default function AdminUsersPage() {
 
             <div>
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                Temporary Password *
+                Labor Cost Rate (₹/hr)
               </label>
               <Input
-                required
-                type="text"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="password123"
+                type="number"
+                min="0"
+                step="1"
+                value={formData.hourly_rate}
+                onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                placeholder="e.g. 800 (used for project budget cost)"
                 className="text-xs font-mono"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              Temporary Password *
+            </label>
+            <Input
+              required
+              type="text"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="password123"
+              className="text-xs font-mono"
+            />
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-end gap-2">
@@ -498,6 +581,111 @@ export default function AdminUsersPage() {
               className="text-xs h-9 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold"
             >
               {createMutation.isPending ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={Boolean(editingUser)}
+        onClose={() => setEditingUser(null)}
+        title={`Edit Team Member: ${editingUser?.name || ''}`}
+        maxWidth="lg"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!editingUser) return;
+            updateMutation.mutate({
+              id: editingUser.id,
+              data: {
+                name: editFormData.name,
+                phone: editFormData.phone || null,
+                role: editFormData.role,
+                hourly_rate: editFormData.hourly_rate ? Number(editFormData.hourly_rate) : 0,
+              },
+            });
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              Full Name *
+            </label>
+            <Input
+              required
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+              placeholder="e.g. Arun Developer"
+              className="text-xs"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Phone Number
+              </label>
+              <Input
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                placeholder="+91 99000 00005"
+                className="text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Labor Cost Rate (₹/hr) *
+              </label>
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                value={editFormData.hourly_rate}
+                onChange={(e) => setEditFormData({ ...editFormData, hourly_rate: e.target.value })}
+                placeholder="e.g. 800"
+                className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400"
+              />
+              <span className="text-[10px] text-slate-400">
+                Logged hours × this rate computes Actual Labor Cost in Project Budgets.
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              Role &amp; Permissions *
+            </label>
+            <select
+              value={editFormData.role}
+              onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+              className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 outline-none"
+            >
+              {ROLE_OPTIONS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditingUser(null)}
+              className="text-xs h-9 rounded-xl"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={updateMutation.isPending}
+              className="text-xs h-9 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold"
+            >
+              {updateMutation.isPending ? 'Saving Changes...' : 'Save Member Details'}
             </Button>
           </div>
         </form>

@@ -371,6 +371,11 @@ export default function ClientDetailPage() {
         <div className="animate-in fade-in duration-150">
           <RetainerInvoicesPanel
             clientId={client.id}
+            clientName={client.name}
+            clientCompany={client.company}
+            clientGst={client.gst_number}
+            clientAddress={client.billing_address}
+            clientState={client.billing_state}
             invoices={client.invoices || []}
             services={client.services || []}
             onRefresh={fetchClientProfile}
@@ -385,6 +390,8 @@ export default function ClientDetailPage() {
             clientId={client.id}
             documents={client.documents || []}
             onRefresh={fetchClientProfile}
+            clientName={client.name}
+            clientCompany={client.company}
           />
         </div>
       )}

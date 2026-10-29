@@ -65,4 +65,42 @@ class DocumentController extends BaseApiController
 
         return $this->successResponse($doc, "Document '{$doc->title}' successfully signed.");
     }
+
+    #[OA\Patch(
+        path: "/api/v1/documents/{id}",
+        summary: "Update pending document before signing",
+        security: [["bearerAuth" => []]],
+        tags: ["Client Documents & E-Sign"]
+    )]
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'title'    => 'sometimes|string|max:255',
+            'type'     => 'nullable|string|in:contract,proposal,nda,welcome',
+            'file_url' => 'sometimes|string|max:500',
+        ]);
+
+        try {
+            $doc = $this->esignService->updateDocument($id, $validated, $request->user());
+            return $this->successResponse($doc, "Document '{$doc->title}' updated successfully.");
+        } catch (\DomainException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
+    }
+
+    #[OA\Delete(
+        path: "/api/v1/documents/{id}",
+        summary: "Delete pending unsigned document",
+        security: [["bearerAuth" => []]],
+        tags: ["Client Documents & E-Sign"]
+    )]
+    public function destroy(int $id): JsonResponse
+    {
+        try {
+            $this->esignService->deleteDocument($id);
+            return $this->successResponse(null, "Document deleted successfully.");
+        } catch (\DomainException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
+    }
 }

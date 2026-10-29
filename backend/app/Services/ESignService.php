@@ -84,4 +84,48 @@ class ESignService implements ESignServiceInterface
             ->latest()
             ->get();
     }
+
+    /**
+     * Update pending document details or file.
+     */
+    public function updateDocument(int $documentId, array $data, User $updater): ClientDocument
+    {
+        $document = ClientDocument::findOrFail($documentId);
+
+        if ($document->status === 'signed') {
+            throw new \DomainException('Signed documents are legally sealed and cannot be modified.');
+        }
+
+        $document->update([
+            'title'    => $data['title'] ?? $document->title,
+            'type'     => $data['type'] ?? $document->type,
+            'file_url' => $data['file_url'] ?? $document->file_url,
+        ]);
+
+        ActivityLog::create([
+            'log_name'     => 'documents',
+            'description'  => "Updated draft document '{$document->title}' (#{$document->id})",
+            'subject_type' => ClientDocument::class,
+            'subject_id'   => $document->id,
+            'causer_type'  => User::class,
+            'causer_id'    => $updater->id,
+            'created_at'   => now(),
+        ]);
+
+        return $document->fresh(['client', 'uploader']);
+    }
+
+    /**
+     * Delete a pending document.
+     */
+    public function deleteDocument(int $documentId): bool
+    {
+        $document = ClientDocument::findOrFail($documentId);
+
+        if ($document->status === 'signed') {
+            throw new \DomainException('Signed documents are legally binding and cannot be deleted.');
+        }
+
+        return $document->delete();
+    }
 }

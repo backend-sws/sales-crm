@@ -18,6 +18,7 @@ class ServiceRequest extends Model
         'added_by',
         'added_by_type',
         'assigned_to',
+        'task_id',
         'sla_deadline',
         'completed_at',
         'confirmed_at',
@@ -50,5 +51,10 @@ class ServiceRequest extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'task_id');
     }
 }

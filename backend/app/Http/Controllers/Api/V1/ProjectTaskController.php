@@ -47,7 +47,7 @@ class ProjectTaskController extends BaseApiController
             'description'      => 'nullable|string',
             'sprint_id'        => 'nullable|exists:sprints,id',
             'milestone_id'     => 'nullable|exists:project_milestones,id',
-            'source_type'      => 'nullable|in:scope,change_request,meeting_action,ad_hoc',
+            'source_type'      => 'nullable|in:scope,change_request,meeting_action,ad_hoc,chat,chat_message',
             'source_id'        => 'nullable|integer',
             'assignee_id'      => 'nullable|exists:users,id',
             'status'           => 'nullable|in:backlog,in_progress,qa,client_review,done',

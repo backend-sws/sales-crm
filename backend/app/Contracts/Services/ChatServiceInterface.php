@@ -48,4 +48,41 @@ interface ChatServiceInterface
      * @return array
      */
     public function toggleReaction(int $messageId, string $emoji, User $user): array;
+
+    /**
+     * Get or create a 1-on-1 direct message channel between current user and another user.
+     *
+     * @param int $projectId
+     * @param int $otherUserId
+     * @param User $currentUser
+     * @return ProjectChannel
+     */
+    public function getOrCreateDirectChannel(int $projectId, int $otherUserId, User $currentUser): ProjectChannel;
+
+    /**
+     * Mark unread messages in a channel as read by the user.
+     *
+     * @param int $channelId
+     * @param User $user
+     * @param int|null $upToMessageId
+     * @return array
+     */
+    public function markChannelAsRead(int $channelId, User $user, ?int $upToMessageId = null): array;
+
+    /**
+     * Touch user presence heartbeat.
+     *
+     * @param User $user
+     * @return void
+     */
+    public function recordHeartbeat(User $user): void;
+
+    /**
+     * Get real-time online/offline presence for all project participants.
+     *
+     * @param int $projectId
+     * @param User $user
+     * @return Collection
+     */
+    public function getProjectPresence(int $projectId, User $user): Collection;
 }

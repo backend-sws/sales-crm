@@ -19,8 +19,12 @@ import {
   Database,
   Cpu,
   Lock,
+  Landmark,
+  CreditCard,
+  Trash2,
 } from 'lucide-react';
 import { phase5Api, type IntegrationSettingsResponse } from '@/api/phase5.api';
+import { clientsApi } from '@/api/clients.api';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 
@@ -28,6 +32,7 @@ export default function SettingsPage() {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingBanking, setSavingBanking] = useState(false);
   const [testingAi, setTestingAi] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
@@ -39,7 +44,18 @@ export default function SettingsPage() {
   const [githubSecret, setGithubSecret] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
-  const [activeTab, setActiveTab] = useState<'integrations' | 'system'>('integrations');
+  const [activeTab, setActiveTab] = useState<'integrations' | 'banking' | 'system'>('integrations');
+
+  const [banking, setBanking] = useState({
+    bank_name: '',
+    bank_branch: '',
+    bank_account_name: '',
+    bank_account_no: '',
+    bank_ifsc: '',
+    bank_upi_id: '',
+    payment_notes: '',
+    is_configured: false,
+  });
 
   useEffect(() => {
     loadSettings();
@@ -48,16 +64,27 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     try {
       setLoading(true);
-      const data = await phase5Api.getIntegrationSettings();
-      setSettings(data);
-      if (data?.gemini?.model) {
-        setGeminiModel(data.gemini.model);
+      const [intRes, bankRes] = await Promise.allSettled([
+        phase5Api.getIntegrationSettings(),
+        clientsApi.getBankingSettings(),
+      ]);
+
+      if (intRes.status === 'fulfilled') {
+        const data = intRes.value;
+        setSettings(data);
+        if (data?.gemini?.model) {
+          setGeminiModel(data.gemini.model);
+        }
+        if (data?.github?.default_org) {
+          setGithubOrg(data.github.default_org);
+        }
       }
-      if (data?.github?.default_org) {
-        setGithubOrg(data.github.default_org);
+
+      if (bankRes.status === 'fulfilled' && bankRes.value?.data) {
+        setBanking(bankRes.value.data);
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to load integration settings.');
+      toast.error(err?.response?.data?.message || 'Failed to load settings.');
     } finally {
       setLoading(false);
     }
@@ -75,6 +102,7 @@ export default function SettingsPage() {
       if (geminiKeyInput.trim()) {
         payload.gemini_api_key = geminiKeyInput.trim();
       }
+
       if (githubSecret.trim()) {
         payload.github_webhook_secret = githubSecret.trim();
       }
@@ -96,6 +124,49 @@ export default function SettingsPage() {
       toast.error(err?.response?.data?.message || 'Failed to update settings.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveBanking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingBanking(true);
+      const res = await clientsApi.updateBankingSettings(banking);
+      if (res?.data) {
+        setBanking(res.data);
+      }
+      toast.success('Banking details saved! Invoices will now display these payment remittance details.');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to save banking settings');
+    } finally {
+      setSavingBanking(false);
+    }
+  };
+
+  const handleClearBanking = async () => {
+    if (!window.confirm('Are you sure you want to clear banking details? Invoices will no longer display bank transfer remittance.')) {
+      return;
+    }
+    try {
+      setSavingBanking(true);
+      const emptyState = {
+        bank_name: '',
+        bank_branch: '',
+        bank_account_name: '',
+        bank_account_no: '',
+        bank_ifsc: '',
+        bank_upi_id: '',
+        payment_notes: '',
+      };
+      const res = await clientsApi.updateBankingSettings(emptyState);
+      if (res?.data) {
+        setBanking(res.data);
+      }
+      toast.success('Banking details cleared. Invoices will now completely hide the bank remittance section.');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to clear banking settings');
+    } finally {
+      setSavingBanking(false);
     }
   };
 
@@ -155,7 +226,7 @@ export default function SettingsPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Centralized control for dynamic Gemini AI keys, GitHub webhooks, and core platform configs.
+                Centralized control for dynamic Gemini AI keys, GitHub webhooks, invoice banking profiles, and core platform configs.
               </p>
             </div>
           </div>
@@ -170,14 +241,16 @@ export default function SettingsPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          <button
-            onClick={() => handleSaveSettings()}
-            disabled={saving || loading}
-            className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            Save All Changes
-          </button>
+          {activeTab === 'integrations' && (
+            <button
+              onClick={() => handleSaveSettings()}
+              disabled={saving || loading}
+              className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              Save All Changes
+            </button>
+          )}
         </div>
       </div>
 
@@ -192,7 +265,18 @@ export default function SettingsPage() {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          AI & Third-Party Integrations
+          AI &amp; Third-Party Integrations
+        </button>
+        <button
+          onClick={() => setActiveTab('banking')}
+          className={`pb-3 px-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition ${
+            activeTab === 'banking'
+              ? 'border-emerald-600 text-emerald-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Landmark className="w-4 h-4" />
+          Company &amp; Banking Profile
         </button>
         <button
           onClick={() => setActiveTab('system')}
@@ -224,7 +308,7 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-bold text-slate-900">Google Gemini AI Engine</h2>
-                    <p className="text-[11px] text-slate-400">Generative AI assistant for CRM & Projects</p>
+                    <p className="text-[11px] text-slate-400">Generative AI assistant for CRM &amp; Projects</p>
                   </div>
                 </div>
 
@@ -263,25 +347,25 @@ export default function SettingsPage() {
                     onChange={(e) => setGeminiModel(e.target.value)}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
                   >
-                    <option value="gemini-1.5-flash">gemini-1.5-flash (Fast, Free Tier Recommended)</option>
-                    <option value="gemini-1.5-pro">gemini-1.5-pro (High Reasoning & Analysis)</option>
-                    <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp (Experimental Next-Gen)</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fastest &amp; Cost Effective)</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Complex Reasoning)</option>
+                    <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Experimental</option>
                   </select>
                 </div>
 
-                {/* Gemini API Key Input */}
+                {/* API Key Input */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">
-                      {settings?.gemini?.is_configured ? 'Update Gemini API Key' : 'Enter Gemini API Key'}
+                    <label className="block text-xs font-semibold text-slate-700">
+                      Update Gemini API Key
                     </label>
                     <a
                       href="https://aistudio.google.com/app/apikey"
                       target="_blank"
-                      rel="noreferrer"
-                      className="text-[11px] text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-0.5"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
                     >
-                      Get Free Key <ExternalLink className="w-2.5 h-2.5" />
+                      Get Key <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                   <div className="relative">
@@ -289,7 +373,7 @@ export default function SettingsPage() {
                       type={showKey ? 'text' : 'password'}
                       value={geminiKeyInput}
                       onChange={(e) => setGeminiKeyInput(e.target.value)}
-                      placeholder={settings?.gemini?.masked_key ? 'Enter new key to replace existing...' : 'AIzaSy...'}
+                      placeholder={settings?.gemini?.has_cloud_key ? '•••••••••••• (Leave blank to keep existing)' : 'AIzaSy...'}
                       className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono pr-9"
                     />
                     <button
@@ -300,52 +384,40 @@ export default function SettingsPage() {
                       {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    API keys are securely encrypted in the <code className="text-slate-600 font-mono">app_settings</code> table.
-                  </p>
                 </div>
 
-                {/* Gemini Capabilities Pill List */}
-                <div className="p-3 bg-violet-50/60 border border-violet-100 rounded-xl space-y-1.5 text-[11px] text-violet-900">
-                  <p className="font-bold flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-violet-600" />
-                    What Gemini AI Powers in SalesCRM:
-                  </p>
-                  <ul className="list-disc list-inside space-y-0.5 text-violet-800 text-[10.5px]">
-                    <li>Meeting audio & transcript action-item generation</li>
-                    <li>Sprint risk assessment & developer bottleneck alerts</li>
-                    <li>Automatic project task & story-point breakdown</li>
-                    <li>Lead smart follow-up suggestions with optimal timing</li>
-                  </ul>
+                {/* Test Connection Button */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleTestAi}
+                    disabled={testingAi}
+                    className="w-full py-2 rounded-xl border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 text-indigo-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+                  >
+                    {testingAi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    {testingAi ? 'Testing Connection...' : 'Test AI Model Ping'}
+                  </button>
                 </div>
               </div>
             </div>
 
             <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">Free Tier: Up to 15 RPM</span>
-              <button
-                type="button"
-                onClick={handleTestAi}
-                disabled={testingAi}
-                className="px-3.5 py-1.5 rounded-xl border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50"
-              >
-                {testingAi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                Test AI Connection
-              </button>
+              <span className="text-[11px] text-slate-400">Encrypted in DB</span>
+              <span className="text-[11px] font-semibold text-slate-600">Dynamic Provider</span>
             </div>
           </div>
 
-          {/* 2. GITHUB & DEVOPS INTEGRATION CARD */}
+          {/* 2. GITHUB WEBHOOKS CARD */}
           <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs">
                     <GitBranch className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-900">GitHub Webhook Pipeline</h2>
-                    <p className="text-[11px] text-slate-400">Real-time commit telemetry & PR analytics</p>
+                    <h2 className="text-sm font-bold text-slate-900">GitHub Automation Webhooks</h2>
+                    <p className="text-[11px] text-slate-400">Sync pull requests, commits &amp; releases into tasks</p>
                   </div>
                 </div>
 
@@ -447,11 +519,168 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      ) : activeTab === 'banking' ? (
+        /* 2. COMPANY & BANKING PROFILE TAB */
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
+                <Landmark className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">Invoicing &amp; Bank Transfer Profile</h2>
+                <p className="text-xs text-slate-500">
+                  Configure official bank remittance details for customer invoices. If left empty, invoices will hide the bank details section.
+                </p>
+              </div>
+            </div>
+
+            {banking.is_configured ? (
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5 self-start sm:self-auto">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Bank Details Active on Invoices
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1.5 self-start sm:self-auto">
+                <AlertCircle className="w-3.5 h-3.5 text-slate-400" /> No Bank Details Configured (Hidden on Invoices)
+              </span>
+            )}
+          </div>
+
+          <form onSubmit={handleSaveBanking} className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Bank Name
+                </label>
+                <input
+                  type="text"
+                  value={banking.bank_name || ''}
+                  onChange={(e) => setBanking({ ...banking, bank_name: e.target.value })}
+                  placeholder="e.g. HDFC Bank Ltd, ICICI Bank, SBI"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Branch Name / City
+                </label>
+                <input
+                  type="text"
+                  value={banking.bank_branch || ''}
+                  onChange={(e) => setBanking({ ...banking, bank_branch: e.target.value })}
+                  placeholder="e.g. BKC Mumbai, Sector 62 Noida"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Account Beneficiary / Company Name
+                </label>
+                <input
+                  type="text"
+                  value={banking.bank_account_name || ''}
+                  onChange={(e) => setBanking({ ...banking, bank_account_name: e.target.value })}
+                  placeholder="e.g. SalesCRM Digital Solutions Pvt Ltd"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Account Number
+                </label>
+                <input
+                  type="text"
+                  value={banking.bank_account_no || ''}
+                  onChange={(e) => setBanking({ ...banking, bank_account_no: e.target.value })}
+                  placeholder="e.g. 50200088992211"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  IFSC Code
+                </label>
+                <input
+                  type="text"
+                  value={banking.bank_ifsc || ''}
+                  onChange={(e) => setBanking({ ...banking, bank_ifsc: e.target.value.toUpperCase() })}
+                  placeholder="e.g. HDFC0001234"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono font-semibold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  UPI VPA / QR ID
+                </label>
+                <input
+                  type="text"
+                  value={banking.bank_upi_id || ''}
+                  onChange={(e) => setBanking({ ...banking, bank_upi_id: e.target.value })}
+                  placeholder="e.g. company@okhdfcbank"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                />
+              </div>
+            </div>
+
+            {/* Live Invoice Preview Box */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Invoice Appearance Preview
+              </span>
+              {banking.bank_name || banking.bank_account_no || banking.bank_ifsc || banking.bank_upi_id ? (
+                <div className="p-3 bg-white rounded-lg border border-slate-200/80 shadow-xs space-y-1">
+                  <p className="text-slate-700">
+                    <strong>Bank Name:</strong> {banking.bank_name || '—'} {banking.bank_branch && `• Branch: ${banking.bank_branch}`}
+                  </p>
+                  {banking.bank_account_name && (
+                    <p className="text-slate-700"><strong>A/C Name:</strong> {banking.bank_account_name}</p>
+                  )}
+                  <p className="text-slate-700 font-mono">
+                    <strong>A/C No:</strong> {banking.bank_account_no || '—'} • <strong>IFSC:</strong> {banking.bank_ifsc || '—'}
+                  </p>
+                  {banking.bank_upi_id && (
+                    <p className="text-slate-700"><strong>UPI VPA:</strong> {banking.bank_upi_id}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-white rounded-lg border border-dashed border-slate-300 text-slate-500 italic text-center">
+                  No bank details configured. Invoices will hide the remittance &amp; bank transfer box completely.
+                </div>
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={handleClearBanking}
+                disabled={savingBanking || !banking.is_configured}
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent flex items-center gap-1.5 transition"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear Bank Details
+              </button>
+
+              <button
+                type="submit"
+                disabled={savingBanking}
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 transition disabled:opacity-50"
+              >
+                {savingBanking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                Save Banking Details
+              </button>
+            </div>
+          </form>
+        </div>
       ) : (
         /* 3. PLATFORM DIAGNOSTICS & SYSTEM TAB */
         <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-6">
           <div>
-            <h2 className="text-sm font-bold text-slate-900">Platform Environment & Status</h2>
+            <h2 className="text-sm font-bold text-slate-900">Platform Environment &amp; Status</h2>
             <p className="text-xs text-slate-400 mt-0.5">High-level diagnostics and security posture of SalesCRM</p>
           </div>
 
@@ -477,7 +706,7 @@ export default function SettingsPage() {
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
               <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold mb-1">
-                <Shield className="w-4 h-4 text-rose-600" /> Your Role & Privilege
+                <Shield className="w-4 h-4 text-rose-600" /> Your Role &amp; Privilege
               </div>
               <p className="text-sm font-bold text-slate-900">{user?.name}</p>
               <p className="text-[11px] text-rose-600 font-bold uppercase mt-1">
@@ -496,7 +725,7 @@ export default function SettingsPage() {
               <span className="font-semibold text-slate-800">Audit Trail with SHA-256 Checksums</span>
             </div>
             <div className="flex items-center justify-between py-1">
-              <span className="text-slate-500 font-medium">Chat & Workspace Real-time Mode</span>
+              <span className="text-slate-500 font-medium">Chat &amp; Workspace Real-time Mode</span>
               <span className="font-semibold text-slate-800">Polling with Presigned S3/Direct Attachment Pipeline</span>
             </div>
           </div>

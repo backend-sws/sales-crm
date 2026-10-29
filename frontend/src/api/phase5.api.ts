@@ -53,6 +53,28 @@ export interface MessageReactionItem {
   };
 }
 
+export interface MessageReadItem {
+  id: number;
+  message_id: number;
+  user_id: number;
+  read_at: string;
+  user?: {
+    id: number;
+    name: string;
+    avatar?: string | null;
+  };
+}
+
+export interface ChatPresenceItem {
+  id: number;
+  name: string;
+  email?: string;
+  avatar?: string | null;
+  is_online: boolean;
+  last_seen_at?: string | null;
+  last_seen_human: string;
+}
+
 export interface ProjectMessageItem {
   id: number;
   channel_id: number;
@@ -71,6 +93,7 @@ export interface ProjectMessageItem {
   };
   attachments?: MessageAttachmentItem[];
   reactions?: MessageReactionItem[];
+  reads?: MessageReadItem[];
   replies?: ProjectMessageItem[];
 }
 
@@ -289,6 +312,11 @@ export const phase5Api = {
     return res.data.data;
   },
 
+  getOrCreateDirectChannel: async (projectId: number, otherUserId: number): Promise<ProjectChannelItem> => {
+    const res = await api.post(`/projects/${projectId}/direct-channel`, { other_user_id: otherUserId });
+    return res.data.data;
+  },
+
   getMessages: async (channelId: number, perPage: number = 50): Promise<{ data: ProjectMessageItem[] }> => {
     const res = await api.get(`/channels/${channelId}/messages?per_page=${perPage}`);
     return res.data;
@@ -301,6 +329,20 @@ export const phase5Api = {
 
   toggleReaction: async (messageId: number, emoji: string): Promise<{ action: string; reactions: MessageReactionItem[] }> => {
     const res = await api.post(`/messages/${messageId}/react`, { emoji });
+    return res.data.data;
+  },
+
+  getChatPresence: async (projectId: number): Promise<ChatPresenceItem[]> => {
+    const res = await api.get(`/projects/${projectId}/chat-presence`);
+    return res.data.data;
+  },
+
+  sendChatHeartbeat: async (): Promise<void> => {
+    await api.post('/chat/heartbeat');
+  },
+
+  markChannelRead: async (channelId: number, lastMessageId?: number): Promise<{ marked_count: number; message_ids: number[] }> => {
+    const res = await api.post(`/channels/${channelId}/read`, { last_message_id: lastMessageId });
     return res.data.data;
   },
 

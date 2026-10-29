@@ -22,4 +22,14 @@ interface ESignServiceInterface
      * Get documents for a client.
      */
     public function getDocuments(int $clientId): Collection;
+
+    /**
+     * Update pending document details or file.
+     */
+    public function updateDocument(int $documentId, array $data, User $updater): ClientDocument;
+
+    /**
+     * Delete a pending document.
+     */
+    public function deleteDocument(int $documentId): bool;
 }

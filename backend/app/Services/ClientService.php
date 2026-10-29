@@ -58,7 +58,7 @@ class ClientService implements ClientServiceInterface
             'services.reports',
             'documents',
             'healthScore',
-            'invoices' => fn ($q) => $q->latest()->limit(10),
+            'invoices' => fn ($q) => $q->with(['client', 'service'])->latest()->limit(20),
             'accountManager:id,name,email,phone',
             'users:id,name,email,phone,client_id',
             'sourceLead.activities' => fn ($q) => $q->latest()->limit(15),

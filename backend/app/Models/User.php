@@ -27,6 +27,7 @@ class User extends Authenticatable
         'is_active',
         'client_id',
         'hourly_rate',
+        'last_seen_at',
     ];
 
     /**
@@ -49,7 +50,16 @@ class User extends Authenticatable
             'password'          => 'hashed',
             'is_active'         => 'boolean',
             'hourly_rate'       => 'decimal:2',
+            'last_seen_at'      => 'datetime',
         ];
+    }
+
+    /**
+     * Determine if the user is currently online (active within past 90 seconds).
+     */
+    public function getIsOnlineAttribute(): bool
+    {
+        return $this->last_seen_at && $this->last_seen_at->gt(now()->subSeconds(90));
     }
 
     /**

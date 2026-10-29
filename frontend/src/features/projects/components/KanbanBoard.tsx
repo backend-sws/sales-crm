@@ -41,6 +41,17 @@ const STAGES = [
   { key: 'done', label: 'Done', color: 'border-emerald-400 dark:border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/10' },
 ] as const;
 
+const stripHtml = (html: string): string => {
+  if (!html) return '';
+  return html
+    .replace(/<br\s*[\/]?>/gi, ' ')
+    .replace(/<\/(p|div|h[1-6]|li)>/gi, ' ')
+    .replace(/<[^>]*>?/gm, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 export function KanbanBoard({
   projectId,
   tasks,
@@ -183,6 +194,15 @@ export function KanbanBoard({
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                             {task.complexity}
                           </span>
+                          {(task.service_request_id || task.service_request || task.title.startsWith('[TICK-')) && (
+                            <span
+                              className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30"
+                              title="Client Ticket approved by Super Admin"
+                            >
+                              <Sparkles className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                              <span>Client Ticket</span>
+                            </span>
+                          )}
                         </div>
 
                         {task.is_blocked && (
@@ -203,7 +223,7 @@ export function KanbanBoard({
                       {/* Description preview */}
                       {task.description && (
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                          {task.description}
+                          {stripHtml(task.description)}
                         </p>
                       )}
 

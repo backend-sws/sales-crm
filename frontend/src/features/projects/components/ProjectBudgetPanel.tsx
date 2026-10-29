@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Loader2,
   ShieldAlert,
+  Sliders,
 } from 'lucide-react';
 import { projectsApi, type BudgetSnapshot, type CapacityDeveloper } from '@/api/projects.api';
 
@@ -19,6 +20,7 @@ interface ProjectBudgetPanelProps {
   capacity?: CapacityDeveloper[];
   isClientView?: boolean;
   onRefresh?: () => void;
+  onEditBudget?: () => void;
 }
 
 export function ProjectBudgetPanel({
@@ -27,6 +29,7 @@ export function ProjectBudgetPanel({
   capacity = [],
   isClientView = false,
   onRefresh,
+  onEditBudget,
 }: ProjectBudgetPanelProps) {
   const [localBudget, setLocalBudget] = useState<BudgetSnapshot | undefined>(budget);
   const [localCapacity, setLocalCapacity] = useState<CapacityDeveloper[]>(capacity);
@@ -164,14 +167,27 @@ export function ProjectBudgetPanel({
           </p>
         </div>
 
-        <button
-          onClick={handleManualRefresh}
-          disabled={isRefreshing}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors shrink-0 shadow-xs cursor-pointer disabled:opacity-60"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-          <span>{isRefreshing ? 'Recalculating...' : 'Refresh Metrics'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onEditBudget && (
+            <button
+              type="button"
+              onClick={onEditBudget}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition-colors shrink-0 shadow-xs cursor-pointer"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Configure Budgets</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors shrink-0 shadow-xs cursor-pointer disabled:opacity-60"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Recalculating...' : 'Refresh Metrics'}</span>
+          </button>
+        </div>
       </div>
 
       {/* 80% / 100% Over-budget warning alert banner */}
@@ -181,7 +197,7 @@ export function ProjectBudgetPanel({
           <div>
             <span className="font-bold">CRITICAL: Project is 100%+ Over Budget!</span>
             <p className="mt-0.5 text-red-800 dark:text-red-300">
-              Total labor costs (₹{Number(activeBudget.actual_cost || 0).toLocaleString('en-IN')}) have exceeded the allocated internal budget of ₹{Number(activeBudget.total_budget || 0).toLocaleString('en-IN')}. Please review task estimates or submit a formal Change Request.
+              Total labor costs (₹{Number(activeBudget.actual_cost || 0).toLocaleString('en-IN')}) have exceeded the allocated project budget of ₹{Number(activeBudget.total_budget || activeBudget.total_value || 0).toLocaleString('en-IN')}. Please review task estimates or update the budget.
             </p>
           </div>
         </div>
@@ -191,7 +207,7 @@ export function ProjectBudgetPanel({
           <div>
             <span className="font-bold">Budget Alert: 80% Consumption Reached!</span>
             <p className="mt-0.5 text-amber-800 dark:text-amber-300">
-              The project has consumed {consumed}% of its internal budget. Monitor remaining sprint hours to prevent margin erosion.
+              The project has consumed {consumed}% of its allocated budget. Monitor remaining sprint hours to prevent cost overruns.
             </p>
           </div>
         </div>
@@ -200,19 +216,22 @@ export function ProjectBudgetPanel({
       {/* Primary Budget Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 shadow-xs">
-          <span className="text-[11px] font-semibold text-slate-400">Total Client Value</span>
-          <p className="text-xl font-black text-slate-900 dark:text-white mt-1">
-            ₹{Number(activeBudget.total_value || 0).toLocaleString('en-IN')}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-400">Total Project Budget</span>
+            {onEditBudget && (
+              <button
+                type="button"
+                onClick={onEditBudget}
+                className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer"
+              >
+                Edit Budget
+              </button>
+            )}
+          </div>
+          <p className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
+            ₹{Number(activeBudget.total_budget || activeBudget.total_value || 0).toLocaleString('en-IN')}
           </p>
-          <span className="text-[10px] text-slate-500">Contract delivery price</span>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 shadow-xs">
-          <span className="text-[11px] font-semibold text-slate-400">Internal Cost Budget</span>
-          <p className="text-xl font-black text-blue-600 dark:text-blue-400 mt-1">
-            ₹{Number(activeBudget.total_budget || 0).toLocaleString('en-IN')}
-          </p>
-          <span className="text-[10px] text-slate-500">Allocated labor target</span>
+          <span className="text-[10px] text-slate-500">Allocated budget for project</span>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 shadow-xs">
@@ -224,7 +243,7 @@ export function ProjectBudgetPanel({
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 shadow-xs">
-          <span className="text-[11px] font-semibold text-slate-400">Gross Margin</span>
+          <span className="text-[11px] font-semibold text-slate-400">Remaining Budget</span>
           <p
             className={`text-xl font-black mt-1 ${
               Number(activeBudget.gross_margin || 0) >= 0
@@ -234,7 +253,15 @@ export function ProjectBudgetPanel({
           >
             ₹{Number(activeBudget.gross_margin || 0).toLocaleString('en-IN')} ({activeBudget.gross_margin_percent || 0}%)
           </p>
-          <span className="text-[10px] text-slate-500">Client price − actual cost</span>
+          <span className="text-[10px] text-slate-500">Project budget − Actual cost</span>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#121217] border border-slate-200/80 dark:border-white/10 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-400">Assigned Team</span>
+          <p className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            {activeCapacity.length} Members
+          </p>
+          <span className="text-[10px] text-slate-500">Active technical capacity</span>
         </div>
       </div>
 
@@ -246,7 +273,7 @@ export function ProjectBudgetPanel({
               Budget Consumption Progress
             </h4>
             <span className="text-xs text-slate-400">
-              ₹{Number(activeBudget.actual_cost || 0).toLocaleString('en-IN')} of ₹{Number(activeBudget.total_budget || 0).toLocaleString('en-IN')} budget
+              ₹{Number(activeBudget.actual_cost || 0).toLocaleString('en-IN')} of ₹{Number(activeBudget.total_budget || activeBudget.total_value || 0).toLocaleString('en-IN')} budget
             </span>
           </div>
           <span

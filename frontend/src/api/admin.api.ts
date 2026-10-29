@@ -6,6 +6,7 @@ export interface AdminUserItem {
   name: string;
   email: string;
   phone?: string;
+  hourly_rate?: number;
   is_active: boolean;
   role: string;
   roles: string[];
@@ -84,6 +85,7 @@ export const adminApi = {
     phone?: string;
     password: string;
     role: string;
+    hourly_rate?: number;
   }): Promise<ApiResponse<{ user: AdminUserItem }>> {
     const response = await api.post<ApiResponse<{ user: AdminUserItem }>>('/admin/users', payload);
     return response.data;
@@ -99,6 +101,7 @@ export const adminApi = {
       phone?: string;
       is_active?: boolean;
       role?: string;
+      hourly_rate?: number;
     }
   ): Promise<ApiResponse<AdminUserItem>> {
     const response = await api.patch<ApiResponse<AdminUserItem>>(`/admin/users/${id}`, payload);

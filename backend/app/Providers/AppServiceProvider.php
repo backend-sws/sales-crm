@@ -59,6 +59,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Safe schema upgrade for tasks.source_type from strict ENUM to VARCHAR(50)
+        if (!\Illuminate\Support\Facades\Cache::has('tasks_source_type_varchar_migrated')) {
+            try {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `tasks` MODIFY COLUMN `source_type` VARCHAR(50) NULL DEFAULT 'ad_hoc'");
+                \Illuminate\Support\Facades\Cache::forever('tasks_source_type_varchar_migrated', true);
+            } catch (\Throwable $e) {
+                // Ignore if not permitted or already applied
+            }
+        }
     }
 }

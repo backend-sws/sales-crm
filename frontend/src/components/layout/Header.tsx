@@ -290,27 +290,27 @@ export function Header({ className = "" }: { className?: string }) {
   return (
     <header
       className={cn(
-        "h-16 px-4 md:px-6 bg-white/85 dark:bg-[#0c0c11]/85 backdrop-blur-md border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between sticky top-0 z-30 transition-colors",
+        "h-16 px-3 sm:px-4 md:px-6 bg-white/85 dark:bg-[#0c0c11]/85 backdrop-blur-md border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between sticky top-0 z-30 transition-colors gap-2",
         className
       )}
     >
       {/* Left: Sidebar toggle button (accessible everywhere) + Clean Breadcrumbs */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         <button
           onClick={handleToggleSidebar}
-          className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent hover:border-slate-200/80 dark:hover:border-white/10 transition-all cursor-pointer"
+          className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent hover:border-slate-200/80 dark:hover:border-white/10 transition-all cursor-pointer shrink-0"
           title={isSidebarCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
           aria-label="Toggle Sidebar"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2 text-xs font-medium">
-          <span className="text-slate-400 dark:text-slate-500 hidden sm:inline">Workspace</span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 hidden sm:inline" />
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-medium min-w-0">
+          <span className="text-slate-400 dark:text-slate-500 hidden md:inline">Workspace</span>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 hidden md:inline shrink-0" />
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse shrink-0" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate max-w-[120px] xs:max-w-[170px] sm:max-w-xs md:max-w-none">
               {getBreadcrumbTitle()}
             </h2>
           </div>
@@ -335,7 +335,7 @@ export function Header({ className = "" }: { className?: string }) {
       )}
 
       {/* Right: Anti-loss alert dropdown, Live Timer Widget, Theme customizer, ModeToggle, Fullscreen, Profile */}
-      <div className="flex items-center gap-2 sm:gap-2.5">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Live Stopwatch Timer Widget */}
         {!isClientUser && <ActiveTimerWidget />}
 
@@ -354,7 +354,7 @@ export function Header({ className = "" }: { className?: string }) {
           {isFullscreen ? <Shrink className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
         </button>
 
-        <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1" />
+        <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-0.5 sm:mx-1" />
 
         <ProfileMenu />
       </div>

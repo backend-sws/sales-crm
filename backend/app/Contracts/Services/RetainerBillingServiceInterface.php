@@ -14,6 +14,21 @@ interface RetainerBillingServiceInterface
     public function generateInvoice(int $serviceId, ?array $override = null): Invoice;
 
     /**
+     * Create a custom itemized tax invoice for a client.
+     */
+    public function createCustomInvoice(int $clientId, array $data, User $actor): Invoice;
+
+    /**
+     * Get single invoice with client and service relations.
+     */
+    public function getInvoice(int $invoiceId): Invoice;
+
+    /**
+     * Delete an unpaid invoice.
+     */
+    public function deleteInvoice(int $invoiceId, User $actor): bool;
+
+    /**
      * Mark invoice as paid (or partially paid).
      */
     public function markInvoicePaid(int $invoiceId, array $paymentDetails, User $actor): Invoice;

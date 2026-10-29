@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
   Receipt,
   Download,
@@ -11,17 +10,29 @@ import {
   Calendar,
   X,
   FileText,
+  Printer,
+  Trash2,
+  Sparkles,
+  Eye,
+  Layers,
 } from 'lucide-react';
 import type { InvoiceItem, ClientServiceItem } from '@/api/clients.api';
 import { clientsApi } from '@/api/clients.api';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import { CreateCustomInvoiceModal } from './CreateCustomInvoiceModal';
+import { InvoiceViewModal } from './InvoiceViewModal';
 import { toast } from 'sonner';
 import { formatDate, formatDateWithDays } from '@/lib/formatters';
 import { useAuthStore } from '@/store/authStore';
 
 interface RetainerInvoicesPanelProps {
   clientId: number;
+  clientName?: string;
+  clientCompany?: string;
+  clientGst?: string | null;
+  clientAddress?: string | null;
+  clientState?: string | null;
   invoices: InvoiceItem[];
   services: ClientServiceItem[];
   onRefresh: () => void;
@@ -30,6 +41,11 @@ interface RetainerInvoicesPanelProps {
 
 export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
   clientId,
+  clientName,
+  clientCompany,
+  clientGst,
+  clientAddress,
+  clientState = 'Delhi',
   invoices,
   services,
   onRefresh,
@@ -47,7 +63,10 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
 
   const [generating, setGenerating] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceItem | null>(null);
+  const [previewInvoice, setPreviewInvoice] = useState<InvoiceItem | null>(null);
+  const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false);
   const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [paying, setPaying] = useState(false);
   const [paymentData, setPaymentData] = useState({
     paid_amount: 0,
@@ -78,6 +97,35 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
       toast.error(err?.response?.data?.message || 'Failed to generate retainer invoice');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleDeleteInvoice = async (invoiceId: number) => {
+    if (!window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setDeletingId(invoiceId);
+      await clientsApi.deleteInvoice(invoiceId);
+      toast.success('Invoice deleted successfully');
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to delete invoice');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleViewInvoice = async (inv: InvoiceItem) => {
+    setPreviewInvoice(inv);
+    try {
+      const res = await clientsApi.getInvoice(inv.id);
+      if (res?.data) {
+        setPreviewInvoice(res.data);
+      }
+    } catch {
+      // keep current inv
     }
   };
 
@@ -154,22 +202,34 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
       </div>
 
       {/* Action Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">Tax Invoices &amp; Retainer Cycles</h3>
-          <p className="text-xs text-slate-500">Includes auto-computed CGST, SGST &amp; IGST tax breakdown.</p>
+          <p className="text-xs text-slate-500">Itemized services, prices, and auto-computed CGST, SGST &amp; IGST tax breakdown.</p>
         </div>
 
         {isStaff && (
-          <Button
-            size="sm"
-            isLoading={generating}
-            onClick={handleGenerateInvoice}
-            className="gap-2 bg-primary-600 hover:bg-primary-700 text-white"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Generate Retainer Invoice</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setIsCreateInvoiceOpen(true)}
+              className="gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold shadow-xs"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Custom Invoice</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              isLoading={generating}
+              onClick={handleGenerateInvoice}
+              className="gap-1.5 text-xs text-slate-600 dark:text-slate-300"
+              title="Fast 1-click generation from current retainer contract"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-primary-500" />
+              <span>Quick Retainer</span>
+            </Button>
+          </div>
         )}
       </div>
 
@@ -179,6 +239,7 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
           <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
             <tr>
               <th className="py-3 px-4">Invoice #</th>
+              <th className="py-3 px-4">Service Scope &amp; Items</th>
               <th className="py-3 px-4">Dates</th>
               <th className="py-3 px-4">Base Subtotal</th>
               <th className="py-3 px-4">GST (18%)</th>
@@ -190,69 +251,161 @@ export const RetainerInvoicesPanel: React.FC<RetainerInvoicesPanelProps> = ({
           <tbody className="divide-y divide-slate-100 dark:divide-white/5">
             {invoices.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
+                <td colSpan={8} className="py-8 text-center text-slate-400 font-medium">
                   No invoices generated for this client yet.
                 </td>
               </tr>
             ) : (
-              invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
-                  <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-white">
-                    <div className="flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-primary-500" />
-                      <span>{inv.invoice_number}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-slate-500">
-                    <div>Issued: {formatDate(inv.issue_date)}</div>
-                    <div className="text-[10px] text-slate-400">Due: {formatDateWithDays(inv.due_date)}</div>
-                  </td>
-                  <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
-                    ₹{Number(inv.subtotal).toLocaleString('en-IN')}
-                  </td>
-                  <td className="py-3 px-4 text-slate-500">
-                    {Number(inv.cgst_amount) > 0 ? (
-                      <div>
-                        <div>CGST: ₹{Number(inv.cgst_amount).toLocaleString('en-IN')}</div>
-                        <div>SGST: ₹{Number(inv.sgst_amount).toLocaleString('en-IN')}</div>
+              invoices.map((inv) => {
+                const firstItem = inv.line_items && inv.line_items[0];
+                const totalItems = inv.line_items?.length || 0;
+                const descText = firstItem?.description || inv.notes || 'Professional Deliverables';
+
+                return (
+                  <tr key={inv.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-white">
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-primary-500" />
+                        <span
+                          onClick={() => handleViewInvoice(inv)}
+                          className="hover:underline hover:text-primary-600 cursor-pointer"
+                        >
+                          {inv.invoice_number}
+                        </span>
                       </div>
-                    ) : (
-                      <div>IGST: ₹{Number(inv.igst_amount).toLocaleString('en-IN')}</div>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 font-black text-slate-900 dark:text-white">
-                    ₹{Number(inv.total_amount).toLocaleString('en-IN')}
-                  </td>
-                  <td className="py-3 px-4">{getStatusBadge(inv.status)}</td>
-                  <td className="py-3 px-4 text-right">
-                    {inv.status !== 'paid' ? (
-                      isStaff ? (
+                    </td>
+
+                    <td className="py-3 px-4 min-w-[200px]">
+                      <div className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-1" title={descText}>
+                        {descText}
+                      </div>
+                      {totalItems > 1 && (
+                        <span className="text-[10px] text-primary-600 dark:text-primary-400 font-medium">
+                          +{totalItems - 1} more line item{totalItems > 2 ? 's' : ''}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
+                      <div>Issued: {formatDate(inv.issue_date)}</div>
+                      <div className="text-[10px] text-slate-400">Due: {formatDateWithDays(inv.due_date)}</div>
+                    </td>
+
+                    <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                      ₹{Number(inv.subtotal).toLocaleString('en-IN')}
+                    </td>
+
+                    <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
+                      {Number(inv.cgst_amount) > 0 ? (
+                        <div>
+                          <div>CGST: ₹{Number(inv.cgst_amount).toLocaleString('en-IN')}</div>
+                          <div>SGST: ₹{Number(inv.sgst_amount).toLocaleString('en-IN')}</div>
+                        </div>
+                      ) : Number(inv.igst_amount) > 0 ? (
+                        <div>IGST: ₹{Number(inv.igst_amount).toLocaleString('en-IN')}</div>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-500">
+                          Non-GST (0%)
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
+                      ₹{Number(inv.total_amount).toLocaleString('en-IN')}
+                    </td>
+
+                    <td className="py-3 px-4">{getStatusBadge(inv.status)}</td>
+
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => openMarkPaid(inv)}
-                          className="text-xs text-emerald-600 hover:text-emerald-700 border-emerald-200 dark:border-emerald-800/40 gap-1.5"
+                          onClick={() => handleViewInvoice(inv)}
+                          className="text-xs gap-1.5 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
+                          title="View &amp; Print Tax Invoice"
                         >
-                          <CreditCard className="w-3.5 h-3.5" />
-                          <span>Record Payment</span>
+                          <Printer className="w-3.5 h-3.5 text-slate-500" />
+                          <span>View / Print</span>
                         </Button>
-                      ) : (
-                        <span className="text-xs text-amber-600 font-semibold bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2.5 py-1 rounded-lg">
-                          Payment Pending
-                        </span>
-                      )
-                    ) : (
-                      <span className="text-xs text-emerald-600 font-semibold flex items-center justify-end gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Paid
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))
+
+                        {inv.status !== 'paid' ? (
+                          isStaff ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openMarkPaid(inv)}
+                                className="text-xs text-emerald-600 hover:text-emerald-700 border-emerald-200 dark:border-emerald-800/40 gap-1"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                <span>Pay</span>
+                              </Button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteInvoice(inv.id)}
+                                disabled={deletingId === inv.id}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                                title="Delete draft invoice"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-amber-600 font-semibold bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-lg">
+                              Pending
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Paid
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Create Custom Invoice Modal */}
+      {isCreateInvoiceOpen && (
+        <CreateCustomInvoiceModal
+          isOpen={isCreateInvoiceOpen}
+          onClose={() => setIsCreateInvoiceOpen(false)}
+          clientId={clientId}
+          clientName={clientName}
+          clientCompany={clientCompany}
+          clientState={clientState || 'Delhi'}
+          services={services}
+          onSuccess={() => {
+            setIsCreateInvoiceOpen(false);
+            onRefresh();
+          }}
+        />
+      )}
+
+      {/* Invoice View & Print Modal */}
+      {previewInvoice && (
+        <InvoiceViewModal
+          isOpen={Boolean(previewInvoice)}
+          onClose={() => setPreviewInvoice(null)}
+          invoice={previewInvoice}
+          clientCompany={clientCompany}
+          clientName={clientName}
+          clientGst={clientGst}
+          clientAddress={clientAddress}
+          clientState={clientState}
+          isStaff={isStaff}
+          onRecordPayment={(inv) => {
+            setPreviewInvoice(null);
+            openMarkPaid(inv);
+          }}
+        />
+      )}
 
       {/* Record Payment Modal */}
       {selectedInvoice && (

@@ -289,6 +289,79 @@ class PhaseThreeClientServiceTrackTest extends TestCase
             ->assertJsonPath('data.status', 'paid');
     }
 
+    public function test_custom_itemized_invoice_creation_and_preview(): void
+    {
+        $client = Client::create([
+            'name'          => 'Rohit Mehra',
+            'company'       => 'Mehra Infotech Pvt Ltd',
+            'email'         => 'rohit@mehra.com',
+            'billing_state' => 'Delhi',
+            'gst_number'    => '07AAAAA0000A1Z5',
+            'status'        => 'active',
+        ]);
+
+        $customInvRes = $this->actingAs($this->admin, 'sanctum')
+            ->postJson("/api/v1/clients/{$client->id}/invoices", [
+                'issue_date' => now()->toDateString(),
+                'due_date'   => now()->addDays(15)->toDateString(),
+                'notes'      => 'Custom milestone and consultation services',
+                'line_items' => [
+                    [
+                        'description' => 'Custom Cloud Infrastructure Setup',
+                        'hsn_sac'     => '998314',
+                        'quantity'    => 1,
+                        'unit_price'  => 30000,
+                        'amount'      => 30000,
+                    ],
+                    [
+                        'description' => 'API Integration & Webhooks',
+                        'hsn_sac'     => '998314',
+                        'quantity'    => 2,
+                        'unit_price'  => 10000,
+                        'amount'      => 20000,
+                    ],
+                ],
+            ]);
+
+        $customInvRes->assertStatus(201)
+            ->assertJsonPath('data.subtotal', 50000)
+            ->assertJsonPath('data.igst_amount', 9000)
+            ->assertJsonPath('data.total_amount', 59000);
+
+        $invoiceId = $customInvRes->json('data.id');
+
+        // Test fetching invoice details
+        $getRes = $this->actingAs($this->admin, 'sanctum')
+            ->getJson("/api/v1/invoices/{$invoiceId}");
+
+        $getRes->assertStatus(200)
+            ->assertJsonPath('data.id', $invoiceId)
+            ->assertJsonPath('data.client.company', 'Mehra Infotech Pvt Ltd')
+            ->assertJsonCount(2, 'data.line_items');
+
+        // Test creating invoice WITHOUT GST (apply_gst = false)
+        $noGstRes = $this->actingAs($this->admin, 'sanctum')
+            ->postJson("/api/v1/clients/{$client->id}/invoices", [
+                'apply_gst'  => false,
+                'notes'      => 'Commercial non-GST invoice',
+                'line_items' => [
+                    [
+                        'description' => 'Consulting services without GST',
+                        'quantity'    => 1,
+                        'unit_price'  => 35000,
+                        'amount'      => 35000,
+                    ],
+                ],
+            ]);
+
+        $noGstRes->assertStatus(201)
+            ->assertJsonPath('data.subtotal', 35000)
+            ->assertJsonPath('data.cgst_amount', 0)
+            ->assertJsonPath('data.sgst_amount', 0)
+            ->assertJsonPath('data.igst_amount', 0)
+            ->assertJsonPath('data.total_amount', 35000);
+    }
+
     public function test_document_e_signing_and_audit_trail(): void
     {
         $client = Client::create([
@@ -392,5 +465,119 @@ class PhaseThreeClientServiceTrackTest extends TestCase
 
         $exitCodeHealth = Artisan::call('clients:recalculate-health');
         $this->assertEquals(0, $exitCodeHealth);
+    }
+
+    public function test_can_update_pending_document_before_signing(): void
+    {
+        $client = Client::create([
+            'name'          => 'Rahul Singhal',
+            'company'       => 'Singhal Exports',
+            'email'         => 'rahul@singhal.com',
+            'billing_state' => 'Delhi',
+            'status'        => 'active',
+        ]);
+
+        // Upload Document
+        $docRes = $this->actingAs($this->admin, 'sanctum')
+            ->postJson("/api/v1/clients/{$client->id}/documents", [
+                'title'    => 'Initial Draft MSA',
+                'type'     => 'contract',
+                'file_url' => 'https://cdn.example.com/draft1.html',
+            ]);
+        $docId = $docRes->json('data.id');
+
+        // Update Document before signing
+        $updateRes = $this->actingAs($this->admin, 'sanctum')
+            ->patchJson("/api/v1/documents/{$docId}", [
+                'title'    => 'Revised Master Services Agreement (v2)',
+                'file_url' => 'https://cdn.example.com/draft2.html',
+            ]);
+        $updateRes->assertStatus(200)
+            ->assertJsonPath('data.title', 'Revised Master Services Agreement (v2)')
+            ->assertJsonPath('data.file_url', 'https://cdn.example.com/draft2.html');
+
+        // Sign the document
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson("/api/v1/documents/{$docId}/sign", [
+                'signer_name' => 'Rahul Singhal',
+            ])->assertStatus(200);
+
+        // Attempting to update after signing should be rejected with 422
+        $blockedRes = $this->actingAs($this->admin, 'sanctum')
+            ->patchJson("/api/v1/documents/{$docId}", [
+                'title' => 'Tampered Title',
+            ]);
+        $blockedRes->assertStatus(422)
+            ->assertJsonPath('message', 'Signed documents are legally sealed and cannot be modified.');
+    }
+
+    public function test_admin_accepts_client_ticket_assigns_developer_and_routes_to_kanban_board(): void
+    {
+        $developer = User::factory()->create();
+        $developer->assignRole('developer');
+
+        $client = Client::create([
+            'name'          => 'Kunal Verma',
+            'company'       => 'Verma Logistics',
+            'email'         => 'kunal@verma.com',
+            'billing_state' => 'Haryana',
+            'status'        => 'active',
+        ]);
+
+        $clientUser = User::create([
+            'name'      => 'Kunal Verma',
+            'email'     => 'kunal_client@verma.com',
+            'password'  => bcrypt('password123'),
+            'client_id' => $client->id,
+            'is_active' => true,
+        ]);
+        $clientUser->assignRole('client');
+
+        $service = ClientService::create([
+            'client_id'         => $client->id,
+            'service_name'      => 'ERP Portal Track',
+            'service_type'      => 'software_project',
+            'billing_cycle'     => 'milestone',
+            'value'             => 75000,
+            'status'            => 'active',
+            'start_date'        => now()->toDateString(),
+        ]);
+
+        // 1. Client creates ticket
+        $ticketRes = $this->actingAs($clientUser, 'sanctum')
+            ->postJson("/api/v1/services/{$service->id}/tickets", [
+                'title'       => 'Export to Excel button failing on invoice page',
+                'description' => '<p>When clicking Export, it gives a 500 error.</p>',
+                'priority'    => 'high',
+            ]);
+
+        $ticketRes->assertStatus(201)
+            ->assertJsonPath('data.status', 'open');
+        $ticketId = $ticketRes->json('data.id');
+
+        // 2. Superadmin reviews and accepts the genuine ticket, assigning developer
+        $acceptRes = $this->actingAs($this->admin, 'sanctum')
+            ->postJson("/api/v1/tickets/{$ticketId}/accept", [
+                'assigned_to'     => $developer->id,
+                'priority'        => 'high',
+                'story_points'    => 5,
+                'estimated_hours' => 4.5,
+            ]);
+
+        $acceptRes->assertStatus(200)
+            ->assertJsonPath('data.status', 'in_progress')
+            ->assertJsonPath('data.assigned_to', $developer->id);
+
+        $taskId = $acceptRes->json('data.task.id');
+        $this->assertNotNull($taskId);
+
+        // Verify task exists in tasks table (Kanban board)
+        $task = \App\Models\Task::find($taskId);
+        $this->assertNotNull($task);
+        $this->assertEquals($developer->id, $task->assignee_id);
+        $this->assertEquals('high', $task->priority);
+        $this->assertEquals(5, $task->story_points);
+        $this->assertEquals('in_progress', $task->status);
+        $this->assertStringContainsString('Export to Excel button failing', $task->title);
     }
 }

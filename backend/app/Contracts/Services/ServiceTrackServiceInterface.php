@@ -25,6 +25,16 @@ interface ServiceTrackServiceInterface
     public function updateTicketStatus(int $ticketId, string $status, User $actor): ServiceRequest;
 
     /**
+     * Accept a client ticket, verify legitimacy, assign developer and route to project Kanban board.
+     */
+    public function acceptTicket(int $ticketId, array $data, User $actor): ServiceRequest;
+
+    /**
+     * Reject / decline an invalid or out-of-scope client ticket.
+     */
+    public function rejectTicket(int $ticketId, ?string $reason, User $actor): ServiceRequest;
+
+    /**
      * Client confirms ticket resolution.
      */
     public function confirmTicket(int $ticketId, User $clientUser): ServiceRequest;

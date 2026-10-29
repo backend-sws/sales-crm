@@ -65,6 +65,15 @@ export interface TaskItem {
   milestone_id?: number | null;
   source_type: 'scope' | 'change_request' | 'meeting_action' | 'ad_hoc';
   source_id?: number | null;
+  service_request_id?: number | null;
+  service_request?: {
+    id: number;
+    ticket_number: string;
+    title: string;
+    priority: string;
+    status: string;
+    client_service_id: number;
+  } | null;
   title: string;
   description?: string | null;
   assignee?: {

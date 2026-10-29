@@ -23,6 +23,7 @@ class ProjectTaskService implements ProjectTaskServiceInterface
                 'blocking:id,title,status',
                 'attachments.uploader:id,name,avatar',
                 'timeEntries.user:id,name',
+                'serviceRequest:id,ticket_number,title,priority,status,client_service_id',
             ]);
 
         if (!empty($filters['status'])) {
@@ -47,7 +48,7 @@ class ProjectTaskService implements ProjectTaskServiceInterface
     public function createTask(Project $project, array $data, User $creator): Task
     {
         return DB::transaction(function () use ($project, $data) {
-            $task = $project->tasks()->create([
+            $taskData = [
                 'sprint_id'        => $data['sprint_id'] ?? null,
                 'milestone_id'     => $data['milestone_id'] ?? null,
                 'source_type'      => $data['source_type'] ?? 'ad_hoc',
@@ -61,7 +62,19 @@ class ProjectTaskService implements ProjectTaskServiceInterface
                 'story_points'     => $data['story_points'] ?? null,
                 'estimated_hours'  => $data['estimated_hours'] ?? null,
                 'due_date'         => $data['due_date'] ?? null,
-            ]);
+            ];
+
+            try {
+                $task = $project->tasks()->create($taskData);
+            } catch (\Throwable $e) {
+                // If strict database ENUM rejects 'chat' (MySQL 1265 warning/error), fallback to 'ad_hoc'
+                if (str_contains($e->getMessage(), 'source_type') || str_contains($e->getMessage(), '1265')) {
+                    $taskData['source_type'] = 'ad_hoc';
+                    $task = $project->tasks()->create($taskData);
+                } else {
+                    throw $e;
+                }
+            }
 
             if (!empty($data['depends_on_ids']) && is_array($data['depends_on_ids'])) {
                 $task->dependsOn()->sync($data['depends_on_ids']);
@@ -133,7 +146,24 @@ class ProjectTaskService implements ProjectTaskServiceInterface
 
         $task->update($updates);
 
-        return $task->fresh(['assignee', 'dependsOn', 'attachments', 'sprint']);
+        // Synchronize with linked ServiceRequest (Ticket)
+        if ($task->service_request_id || $task->serviceRequest) {
+            $serviceTicket = $task->serviceRequest ?: \App\Models\ServiceRequest::find($task->service_request_id);
+            if ($serviceTicket) {
+                if (in_array($newStatus, ['client_review', 'done'], true)) {
+                    $serviceTicket->update([
+                        'status'       => 'done',
+                        'completed_at' => now(),
+                    ]);
+                } elseif ($newStatus === 'in_progress') {
+                    $serviceTicket->update([
+                        'status' => 'in_progress',
+                    ]);
+                }
+            }
+        }
+
+        return $task->fresh(['assignee', 'dependsOn', 'attachments', 'sprint', 'serviceRequest']);
     }
 
     public function addDependency(Task $task, int $dependsOnTaskId): void
@@ -196,7 +226,24 @@ class ProjectTaskService implements ProjectTaskServiceInterface
             ]);
         }
 
-        return $task->fresh(['assignee', 'attachments']);
+        // Synchronize with linked ServiceRequest (Ticket)
+        if ($task->service_request_id || $task->serviceRequest) {
+            $serviceTicket = $task->serviceRequest ?: \App\Models\ServiceRequest::find($task->service_request_id);
+            if ($serviceTicket) {
+                if ($action === 'accept') {
+                    $serviceTicket->update([
+                        'status'       => 'confirmed',
+                        'confirmed_at' => now(),
+                    ]);
+                } elseif ($action === 'reject') {
+                    $serviceTicket->update([
+                        'status' => 'in_progress',
+                    ]);
+                }
+            }
+        }
+
+        return $task->fresh(['assignee', 'attachments', 'serviceRequest']);
     }
 
     public function getGanttData(Project $project): array

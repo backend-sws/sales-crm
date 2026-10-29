@@ -22,16 +22,24 @@ class RetainerBillingService implements RetainerBillingServiceInterface
         $subtotal = (float) ($override['amount'] ?? $service->value);
 
         // Tax calculation: Maharashtra intra-state (CGST 9% + SGST 9%) vs Inter-state IGST 18%
-        $isHomeState = strcasecmp(trim($client->billing_state ?? ''), 'Maharashtra') === 0;
+        $applyGst = isset($override['apply_gst']) ? filter_var($override['apply_gst'], FILTER_VALIDATE_BOOLEAN) : true;
 
-        if ($isHomeState) {
-            $cgst = round($subtotal * 0.09, 2);
-            $sgst = round($subtotal * 0.09, 2);
-            $igst = 0.00;
+        if ($applyGst) {
+            $isHomeState = strcasecmp(trim($client->billing_state ?? ''), 'Maharashtra') === 0;
+
+            if ($isHomeState) {
+                $cgst = round($subtotal * 0.09, 2);
+                $sgst = round($subtotal * 0.09, 2);
+                $igst = 0.00;
+            } else {
+                $cgst = 0.00;
+                $sgst = 0.00;
+                $igst = round($subtotal * 0.18, 2);
+            }
         } else {
             $cgst = 0.00;
             $sgst = 0.00;
-            $igst = round($subtotal * 0.18, 2);
+            $igst = 0.00;
         }
 
         $total = round($subtotal + $cgst + $sgst + $igst, 2);
@@ -41,6 +49,16 @@ class RetainerBillingService implements RetainerBillingServiceInterface
 
         $issueDate = $override['issue_date'] ?? now()->toDateString();
         $dueDate = $override['due_date'] ?? now()->addDays(15)->toDateString();
+
+        $lineItems = $override['line_items'] ?? [
+            [
+                'description' => "{$service->service_name} ({$service->billing_cycle} cycle)",
+                'hsn_sac'     => '998314',
+                'quantity'    => 1,
+                'unit_price'  => $subtotal,
+                'amount'      => $subtotal,
+            ],
+        ];
 
         $invoice = Invoice::create([
             'client_id'         => $client->id,
@@ -55,12 +73,7 @@ class RetainerBillingService implements RetainerBillingServiceInterface
             'total_amount'      => $total,
             'paid_amount'       => 0.00,
             'status'            => 'sent',
-            'line_items'        => [
-                [
-                    'description' => "{$service->service_name} ({$service->billing_cycle} cycle)",
-                    'amount'      => $subtotal,
-                ],
-            ],
+            'line_items'        => $lineItems,
             'notes'             => $override['notes'] ?? 'GST Retainer recurring billing invoice',
         ]);
 
@@ -118,11 +131,139 @@ class RetainerBillingService implements RetainerBillingServiceInterface
     }
 
     /**
+     * Create a custom itemized tax invoice for a client.
+     */
+    public function createCustomInvoice(int $clientId, array $data, User $actor): Invoice
+    {
+        $client = \App\Models\Client::findOrFail($clientId);
+
+        $lineItems = $data['line_items'] ?? [];
+        if (empty($lineItems)) {
+            $lineItems = [
+                [
+                    'description' => $data['description'] ?? 'Professional Software & Retainer Services',
+                    'hsn_sac'     => $data['hsn_sac'] ?? '998314',
+                    'quantity'    => 1,
+                    'unit_price'  => (float) ($data['amount'] ?? 0),
+                    'amount'      => (float) ($data['amount'] ?? 0),
+                ],
+            ];
+        } else {
+            $lineItems = array_map(function ($item) {
+                $qty = (float) ($item['quantity'] ?? 1);
+                $unitPrice = (float) ($item['unit_price'] ?? $item['amount'] ?? 0);
+                $amount = (float) ($item['amount'] ?? ($qty * $unitPrice));
+                return [
+                    'description' => $item['description'] ?? 'Service Item',
+                    'hsn_sac'     => $item['hsn_sac'] ?? '998314',
+                    'quantity'    => $qty,
+                    'unit_price'  => $unitPrice,
+                    'amount'      => $amount,
+                ];
+            }, $lineItems);
+        }
+
+        $subtotal = array_sum(array_column($lineItems, 'amount'));
+
+        // Tax calculation: Maharashtra intra-state (CGST 9% + SGST 9%) vs Inter-state IGST 18%
+        $applyGst = isset($data['apply_gst']) ? filter_var($data['apply_gst'], FILTER_VALIDATE_BOOLEAN) : true;
+
+        if ($applyGst) {
+            $isHomeState = strcasecmp(trim($client->billing_state ?? ''), 'Maharashtra') === 0;
+
+            if ($isHomeState) {
+                $cgst = round($subtotal * 0.09, 2);
+                $sgst = round($subtotal * 0.09, 2);
+                $igst = 0.00;
+            } else {
+                $cgst = 0.00;
+                $sgst = 0.00;
+                $igst = round($subtotal * 0.18, 2);
+            }
+        } else {
+            $cgst = 0.00;
+            $sgst = 0.00;
+            $igst = 0.00;
+        }
+
+        $total = round($subtotal + $cgst + $sgst + $igst, 2);
+
+        $seq = Invoice::count() + 1;
+        $invoiceNumber = $data['invoice_number'] ?? ('INV-' . date('Y') . '-' . str_pad($seq, 4, '0', STR_PAD_LEFT));
+
+        $issueDate = $data['issue_date'] ?? now()->toDateString();
+        $dueDate = $data['due_date'] ?? now()->addDays(15)->toDateString();
+
+        $invoice = Invoice::create([
+            'client_id'         => $client->id,
+            'client_service_id' => $data['client_service_id'] ?? null,
+            'project_id'        => $data['project_id'] ?? null,
+            'invoice_number'    => $invoiceNumber,
+            'issue_date'        => $issueDate,
+            'due_date'          => $dueDate,
+            'subtotal'          => $subtotal,
+            'cgst_amount'       => $cgst,
+            'sgst_amount'       => $sgst,
+            'igst_amount'       => $igst,
+            'total_amount'      => $total,
+            'paid_amount'       => 0.00,
+            'status'            => $data['status'] ?? 'sent',
+            'line_items'        => $lineItems,
+            'notes'             => $data['notes'] ?? 'Tax Invoice payable within due date. Bank transfer / NEFT / UPI accepted.',
+        ]);
+
+        ActivityLog::create([
+            'log_name'     => 'billing',
+            'description'  => "Created custom tax invoice {$invoiceNumber} for ₹" . number_format($total) . " ({$client->name}) with " . count($lineItems) . " line item(s)",
+            'subject_type' => Invoice::class,
+            'subject_id'   => $invoice->id,
+            'causer_type'  => User::class,
+            'causer_id'    => $actor->id,
+            'created_at'   => now(),
+        ]);
+
+        return $invoice->load(['client', 'service', 'project']);
+    }
+
+    /**
+     * Get single invoice with client and service relations.
+     */
+    public function getInvoice(int $invoiceId): Invoice
+    {
+        return Invoice::with(['client', 'service', 'project'])->findOrFail($invoiceId);
+    }
+
+    /**
+     * Delete an unpaid invoice.
+     */
+    public function deleteInvoice(int $invoiceId, User $actor): bool
+    {
+        $invoice = Invoice::findOrFail($invoiceId);
+        if ($invoice->status === 'paid') {
+            throw new \Exception('Paid invoices cannot be deleted.');
+        }
+
+        ActivityLog::create([
+            'log_name'     => 'billing',
+            'description'  => "Deleted invoice {$invoice->invoice_number} (₹" . number_format($invoice->total_amount) . ")",
+            'subject_type' => Invoice::class,
+            'subject_id'   => $invoice->id,
+            'causer_type'  => User::class,
+            'causer_id'    => $actor->id,
+            'created_at'   => now(),
+        ]);
+
+        return $invoice->delete();
+    }
+
+    /**
      * Get invoices for a client.
      */
     public function getInvoices(int $clientId, array $filters = []): Collection
     {
-        $query = Invoice::where('client_id', $clientId)->latest('issue_date');
+        $query = Invoice::where('client_id', $clientId)
+            ->with(['client', 'service', 'project'])
+            ->latest('issue_date');
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);

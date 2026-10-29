@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckSquare, Users, AlertCircle, Link2, Sparkles } from 'lucide-react';
 import { projectsApi, type TaskItem, type SprintItem, type ProjectMilestoneItem } from '@/api/projects.api';
 import { Modal } from '@/components/ui/modal';
@@ -9,11 +9,16 @@ interface CreateTaskModalProps {
   projectId: number;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (createdTask?: any) => void;
   sprints?: SprintItem[];
   milestones?: ProjectMilestoneItem[];
   existingTasks?: TaskItem[];
   teamMembers?: { id: number; name: string; avatar?: string | null }[];
+  initialTitle?: string;
+  initialDescription?: string;
+  initialAssigneeId?: number;
+  sourceType?: string;
+  sourceId?: number | null;
 }
 
 export function CreateTaskModal({
@@ -25,10 +30,15 @@ export function CreateTaskModal({
   milestones = [],
   existingTasks = [],
   teamMembers = [],
+  initialTitle = '',
+  initialDescription = '',
+  initialAssigneeId,
+  sourceType = 'ad_hoc',
+  sourceId = null,
 }: CreateTaskModalProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [assigneeId, setAssigneeId] = useState<number | ''>('');
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const [assigneeId, setAssigneeId] = useState<number | ''>(initialAssigneeId || '');
   const [sprintId, setSprintId] = useState<number | ''>('');
   const [milestoneId, setMilestoneId] = useState<number | ''>('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
@@ -37,6 +47,14 @@ export function CreateTaskModal({
   const [estimatedHours, setEstimatedHours] = useState<number | ''>(4);
   const [dependsOnIds, setDependsOnIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTitle(initialTitle || '');
+      setDescription(initialDescription || '');
+      setAssigneeId(initialAssigneeId || '');
+    }
+  }, [isOpen, initialTitle, initialDescription, initialAssigneeId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +65,7 @@ export function CreateTaskModal({
 
     try {
       setLoading(true);
-      await projectsApi.createTask(projectId, {
+      const res = await projectsApi.createTask(projectId, {
         title,
         description,
         assignee_id: assigneeId ? Number(assigneeId) : null,
@@ -58,10 +76,12 @@ export function CreateTaskModal({
         story_points: storyPoints ? Number(storyPoints) : 1,
         estimated_hours: estimatedHours ? Number(estimatedHours) : 1,
         depends_on: dependsOnIds,
+        source_type: sourceType,
+        source_id: sourceId,
       });
 
       toast.success('Task created successfully!');
-      onSuccess();
+      onSuccess(res?.data);
       onClose();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to create task.');
@@ -91,11 +111,11 @@ export function CreateTaskModal({
       }
       description="Backlog, Sprint & Kanban Execution"
       footer={
-        <div className="flex items-center justify-end gap-3 w-full">
-          <Button variant="outline" type="button" onClick={onClose}>
+        <div className="flex items-center justify-end gap-2 sm:gap-3 w-full">
+          <Button variant="outline" type="button" onClick={onClose} className="px-3 sm:px-4 py-2 text-xs sm:text-sm">
             Cancel
           </Button>
-          <Button type="button" disabled={loading} onClick={handleSubmit} className="gap-1.5">
+          <Button type="button" disabled={loading} onClick={handleSubmit} className="gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm">
             <CheckSquare className="w-4 h-4" />
             {loading ? 'Creating...' : 'Create Task'}
           </Button>
@@ -208,7 +228,7 @@ export function CreateTaskModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
           {/* Complexity */}
           <div>
             <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">

@@ -54,6 +54,19 @@ export interface ServiceRequestItem {
   added_by?: number | null;
   added_by_type: 'client' | 'admin';
   assigned_to?: number | null;
+  task_id?: number | null;
+  task?: {
+    id: number;
+    project_id: number;
+    status: string;
+    title: string;
+    story_points?: number | null;
+    assignee_id?: number | null;
+    project?: {
+      id: number;
+      name: string;
+    } | null;
+  } | null;
   sla_deadline?: string | null;
   completed_at?: string | null;
   confirmed_at?: string | null;
@@ -90,10 +103,19 @@ export interface ClientDocumentItem {
   created_at: string;
 }
 
+export interface InvoiceLineItem {
+  description: string;
+  hsn_sac?: string;
+  quantity?: number;
+  unit_price?: number;
+  amount: number;
+}
+
 export interface InvoiceItem {
   id: number;
   client_id: number;
   client_service_id?: number | null;
+  project_id?: number | null;
   invoice_number: string;
   issue_date: string;
   due_date: string;
@@ -105,8 +127,32 @@ export interface InvoiceItem {
   paid_amount: number;
   status: 'draft' | 'sent' | 'paid' | 'partially_paid' | 'overdue' | 'cancelled';
   paid_at?: string | null;
-  line_items?: Array<{ description: string; amount: number }>;
+  line_items?: InvoiceLineItem[];
   notes?: string | null;
+  banking_details?: {
+    bank_name?: string | null;
+    bank_branch?: string | null;
+    bank_account_name?: string | null;
+    bank_account_no?: string | null;
+    bank_ifsc?: string | null;
+    bank_upi_id?: string | null;
+  } | null;
+  client?: {
+    id: number;
+    name: string;
+    company: string;
+    email: string;
+    phone?: string | null;
+    gst_number?: string | null;
+    billing_address?: string | null;
+    billing_state?: string | null;
+  };
+  service?: {
+    id: number;
+    service_name: string;
+    service_type: string;
+    billing_cycle: string;
+  } | null;
 }
 
 export interface OnboardingStepItem {
@@ -254,6 +300,33 @@ export const clientsApi = {
   },
 
   /**
+   * Super Admin accepts ticket, assigns developer, and creates task on Kanban board.
+   */
+  async acceptTicket(
+    ticketId: number,
+    payload: {
+      assigned_to: number;
+      project_id?: number | null;
+      priority?: string;
+      kanban_status?: string;
+      story_points?: number;
+      estimated_hours?: number;
+      due_date?: string | null;
+    }
+  ): Promise<ApiResponse<ServiceRequestItem>> {
+    const response = await api.post<ApiResponse<ServiceRequestItem>>(`/tickets/${ticketId}/accept`, payload);
+    return response.data;
+  },
+
+  /**
+   * Super Admin rejects / declines out-of-scope ticket.
+   */
+  async rejectTicket(ticketId: number, reason?: string): Promise<ApiResponse<ServiceRequestItem>> {
+    const response = await api.post<ApiResponse<ServiceRequestItem>>(`/tickets/${ticketId}/reject`, { reason });
+    return response.data;
+  },
+
+  /**
    * Client confirms ticket completion.
    */
   async confirmTicket(ticketId: number): Promise<ApiResponse<ServiceRequestItem>> {
@@ -282,6 +355,42 @@ export const clientsApi = {
    */
   async getInvoices(clientId: number, params?: Record<string, any>): Promise<ApiResponse<InvoiceItem[]>> {
     const response = await api.get<ApiResponse<InvoiceItem[]>>(`/clients/${clientId}/invoices`, { params });
+    return response.data;
+  },
+
+  /**
+   * Create custom itemized invoice.
+   */
+  async createCustomInvoice(
+    clientId: number,
+    payload: {
+      client_service_id?: number | null;
+      project_id?: number | null;
+      invoice_number?: string;
+      issue_date?: string;
+      due_date?: string;
+      apply_gst?: boolean;
+      notes?: string;
+      line_items: InvoiceLineItem[];
+    }
+  ): Promise<ApiResponse<InvoiceItem>> {
+    const response = await api.post<ApiResponse<InvoiceItem>>(`/clients/${clientId}/invoices`, payload);
+    return response.data;
+  },
+
+  /**
+   * Get single invoice details for view and print.
+   */
+  async getInvoice(invoiceId: number): Promise<ApiResponse<InvoiceItem>> {
+    const response = await api.get<ApiResponse<InvoiceItem>>(`/invoices/${invoiceId}`);
+    return response.data;
+  },
+
+  /**
+   * Delete an unpaid invoice.
+   */
+  async deleteInvoice(invoiceId: number): Promise<ApiResponse<null>> {
+    const response = await api.delete<ApiResponse<null>>(`/invoices/${invoiceId}`);
     return response.data;
   },
 
@@ -318,10 +427,51 @@ export const clientsApi = {
   },
 
   /**
+   * Update pending unsigned document.
+   */
+  async updateDocument(documentId: number, payload: Record<string, any>): Promise<ApiResponse<ClientDocumentItem>> {
+    const response = await api.patch<ApiResponse<ClientDocumentItem>>(`/documents/${documentId}`, payload);
+    return response.data;
+  },
+
+  /**
+   * Delete pending unsigned document.
+   */
+  async deleteDocument(documentId: number): Promise<ApiResponse<null>> {
+    const response = await api.delete<ApiResponse<null>>(`/documents/${documentId}`);
+    return response.data;
+  },
+
+  /**
    * Client e-signs document.
    */
   async signDocument(documentId: number, payload: { signer_name: string; signature_data_url?: string }): Promise<ApiResponse<ClientDocumentItem>> {
     const response = await api.post<ApiResponse<ClientDocumentItem>>(`/documents/${documentId}/sign`, payload);
+    return response.data;
+  },
+
+  /**
+   * Get company banking settings for invoices.
+   */
+  async getBankingSettings(): Promise<ApiResponse<{
+    bank_name: string;
+    bank_branch: string;
+    bank_account_name: string;
+    bank_account_no: string;
+    bank_ifsc: string;
+    bank_upi_id: string;
+    payment_notes: string;
+    is_configured: boolean;
+  }>> {
+    const response = await api.get('/settings/banking');
+    return response.data;
+  },
+
+  /**
+   * Update company banking settings for invoices.
+   */
+  async updateBankingSettings(payload: Record<string, any>): Promise<ApiResponse<any>> {
+    const response = await api.post('/settings/banking', payload);
     return response.data;
   },
 };

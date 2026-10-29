@@ -115,4 +115,61 @@ class SettingsController extends BaseApiController
             'ai_mode'     => $aiMode,
         ], 'Integrations settings saved successfully.');
     }
+
+    #[OA\Get(
+        path: "/api/v1/settings/banking",
+        summary: "Get company banking & remittance details for invoices",
+        security: [["bearerAuth" => []]],
+        tags: ["Settings & Integrations"]
+    )]
+    public function getBanking(): JsonResponse
+    {
+        $bankName = AppSetting::get('bank_name', '');
+        $bankBranch = AppSetting::get('bank_branch', '');
+        $bankAccountName = AppSetting::get('bank_account_name', '');
+        $bankAccountNo = AppSetting::get('bank_account_no', '');
+        $bankIfsc = AppSetting::get('bank_ifsc', '');
+        $bankUpiId = AppSetting::get('bank_upi_id', '');
+        $paymentNotes = AppSetting::get('payment_notes', '');
+
+        $isConfigured = !empty($bankName) || !empty($bankAccountNo) || !empty($bankIfsc) || !empty($bankUpiId);
+
+        return $this->successResponse([
+            'bank_name'         => $bankName,
+            'bank_branch'       => $bankBranch,
+            'bank_account_name' => $bankAccountName,
+            'bank_account_no'   => $bankAccountNo,
+            'bank_ifsc'         => $bankIfsc,
+            'bank_upi_id'       => $bankUpiId,
+            'payment_notes'     => $paymentNotes,
+            'is_configured'     => $isConfigured,
+        ], 'Banking settings retrieved successfully.');
+    }
+
+    #[OA\Post(
+        path: "/api/v1/settings/banking",
+        summary: "Update company banking & remittance details for invoices",
+        security: [["bearerAuth" => []]],
+        tags: ["Settings & Integrations"]
+    )]
+    public function updateBanking(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'bank_name'         => 'nullable|string|max:150',
+            'bank_branch'       => 'nullable|string|max:150',
+            'bank_account_name' => 'nullable|string|max:150',
+            'bank_account_no'   => 'nullable|string|max:50',
+            'bank_ifsc'         => 'nullable|string|max:30',
+            'bank_upi_id'       => 'nullable|string|max:100',
+            'payment_notes'     => 'nullable|string|max:500',
+        ]);
+
+        foreach (['bank_name', 'bank_branch', 'bank_account_name', 'bank_account_no', 'bank_ifsc', 'bank_upi_id', 'payment_notes'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                AppSetting::set($field, trim((string) ($validated[$field] ?? '')), 'banking', false);
+            }
+        }
+
+        return $this->getBanking();
+    }
 }

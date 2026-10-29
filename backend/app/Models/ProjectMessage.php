@@ -54,4 +54,9 @@ class ProjectMessage extends Model
     {
         return $this->hasMany(MessageReaction::class, 'message_id');
     }
+
+    public function reads(): HasMany
+    {
+        return $this->hasMany(ProjectMessageRead::class, 'message_id');
+    }
 }

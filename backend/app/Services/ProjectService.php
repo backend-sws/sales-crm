@@ -64,6 +64,12 @@ class ProjectService implements ProjectServiceInterface
 
         return $projects->map(function ($project) use ($user) {
             $isInternalManager = ! $user || $user->hasAnyRole(['super_admin', 'project_manager', 'sales_manager', 'account_manager']);
+            $unifiedBudget = (float) ($project->total_budget > 0 ? $project->total_budget : $project->total_value);
+            if ($project->total_budget > 0 && (float) $project->total_value !== (float) $project->total_budget) {
+                \Illuminate\Support\Facades\DB::table('projects')->where('id', $project->id)->update(['total_value' => $project->total_budget]);
+                $project->total_value = $project->total_budget;
+            }
+
             $budget = $isInternalManager ? $this->getBudgetSnapshot($project) : null;
             $totalTasks = $project->tasks_count ?? 0;
             $completedTasks = $project->completed_tasks_count ?? 0;
@@ -79,8 +85,8 @@ class ProjectService implements ProjectServiceInterface
                 'active_sprint'           => $project->sprints->first(),
                 'start_date'              => $project->start_date?->toDateString(),
                 'target_end_date'         => $project->target_end_date?->toDateString(),
-                'total_value'             => $isInternalManager ? (float) $project->total_value : null,
-                'total_budget'            => $isInternalManager ? (float) $project->total_budget : null,
+                'total_value'             => $isInternalManager ? $unifiedBudget : null,
+                'total_budget'            => $isInternalManager ? $unifiedBudget : null,
                 'tasks_count'             => $totalTasks,
                 'completed_tasks_count'   => $completedTasks,
                 'progress_percent'        => $progressPercent,
@@ -124,6 +130,12 @@ class ProjectService implements ProjectServiceInterface
         }
 
         $isInternalManager = ! $user || $user->hasAnyRole(['super_admin', 'project_manager', 'sales_manager', 'account_manager']);
+        $unifiedBudget = (float) ($project->total_budget > 0 ? $project->total_budget : $project->total_value);
+        if ($project->total_budget > 0 && (float) $project->total_value !== (float) $project->total_budget) {
+            \Illuminate\Support\Facades\DB::table('projects')->where('id', $project->id)->update(['total_value' => $project->total_budget]);
+            $project->total_value = $project->total_budget;
+        }
+
         $budgetSnapshot = $isInternalManager ? $this->getBudgetSnapshot($project) : null;
         $capacityMatrix = $isInternalManager ? $this->getCapacityMatrix($project) : [];
 
@@ -150,8 +162,8 @@ class ProjectService implements ProjectServiceInterface
             'project_manager'      => $project->projectManager,
             'start_date'           => $project->start_date?->toDateString(),
             'target_end_date'      => $project->target_end_date?->toDateString(),
-            'total_value'          => $isInternalManager ? (float) $project->total_value : null,
-            'total_budget'         => $isInternalManager ? (float) $project->total_budget : null,
+            'total_value'          => $isInternalManager ? $unifiedBudget : null,
+            'total_budget'         => $isInternalManager ? $unifiedBudget : null,
             'sprint_duration_days' => $project->sprint_duration_days,
             'progress_percent'     => $progressPercent,
             'milestones'           => $project->milestones,
@@ -170,8 +182,9 @@ class ProjectService implements ProjectServiceInterface
     public function createProject(array $data, User $creator): Project
     {
         $pmId = $data['pm_id'] ?? $creator->id;
+        $budget = (float) ($data['budget'] ?? $data['total_budget'] ?? $data['total_value'] ?? 0);
 
-        return DB::transaction(function () use ($data, $pmId) {
+        return DB::transaction(function () use ($data, $pmId, $budget) {
             $project = Project::create([
                 'client_id'            => $data['client_id'],
                 'client_service_id'    => $data['client_service_id'] ?? null,
@@ -181,8 +194,8 @@ class ProjectService implements ProjectServiceInterface
                 'pm_id'                => $pmId,
                 'start_date'           => $data['start_date'] ?? now()->toDateString(),
                 'target_end_date'      => $data['target_end_date'] ?? now()->addMonths(2)->toDateString(),
-                'total_value'          => $data['total_value'] ?? 0,
-                'total_budget'         => $data['total_budget'] ?? 0,
+                'total_value'          => $budget,
+                'total_budget'         => $budget,
                 'sprint_duration_days' => $data['sprint_duration_days'] ?? 14,
             ]);
 
@@ -203,25 +216,35 @@ class ProjectService implements ProjectServiceInterface
 
     public function updateProject(Project $project, array $data): Project
     {
-        $project->update(array_filter([
+        $hasBudget = isset($data['budget']) || isset($data['total_budget']) || isset($data['total_value']);
+        $budget = $hasBudget
+            ? (float) ($data['budget'] ?? $data['total_budget'] ?? $data['total_value'])
+            : null;
+
+        $updateData = array_filter([
             'name'                 => $data['name'] ?? null,
             'description'          => $data['description'] ?? null,
             'status'               => $data['status'] ?? null,
             'pm_id'                => $data['pm_id'] ?? null,
             'start_date'           => $data['start_date'] ?? null,
             'target_end_date'      => $data['target_end_date'] ?? null,
-            'total_value'          => $data['total_value'] ?? null,
-            'total_budget'         => $data['total_budget'] ?? null,
+            'total_value'          => $budget,
+            'total_budget'         => $budget,
             'sprint_duration_days' => $data['sprint_duration_days'] ?? null,
-        ], fn($val) => !is_null($val)));
+        ], fn($val) => !is_null($val));
+
+        $project->update($updateData);
 
         return $project->fresh();
     }
 
     public function getBudgetSnapshot(Project $project): array
     {
-        $totalBudget = (float) $project->total_budget;
-        $totalValue  = (float) $project->total_value;
+        // Unified single project budget
+        $budget = (float) ($project->total_budget > 0 ? $project->total_budget : $project->total_value);
+        if ($budget <= 0 && (float) $project->total_value > 0) {
+            $budget = (float) $project->total_value;
+        }
 
         // Estimated cost = sum(task.estimated_hours * user.hourly_rate)
         $estimatedCost = (float) DB::table('tasks')
@@ -238,24 +261,26 @@ class ProjectService implements ProjectServiceInterface
             ->where('time_entries.is_billable', true)
             ->sum(DB::raw('(COALESCE(time_entries.duration_minutes, 0) / 60.0) * COALESCE(users.hourly_rate, 0)'));
 
-        $budgetConsumedPercent = $totalBudget > 0
-            ? round(($actualCost / $totalBudget) * 100, 1)
+        $budgetConsumedPercent = $budget > 0
+            ? round(($actualCost / $budget) * 100, 1)
             : 0;
 
-        $grossMargin = round($totalValue - $actualCost, 2);
-        $marginPercent = $totalValue > 0
-            ? round(($grossMargin / $totalValue) * 100, 1)
+        $remainingBudget = round($budget - $actualCost, 2);
+        $marginPercent = $budget > 0
+            ? round(($remainingBudget / $budget) * 100, 1)
             : 0;
 
         return [
-            'total_budget'            => $totalBudget,
-            'total_value'             => $totalValue,
+            'total_budget'            => $budget,
+            'total_value'             => $budget,
+            'project_budget'          => $budget,
+            'remaining_budget'        => $remainingBudget,
             'estimated_cost'          => round($estimatedCost, 2),
             'actual_cost'             => round($actualCost, 2),
             'budget_consumed_percent' => $budgetConsumedPercent,
             'is_over_budget'          => $budgetConsumedPercent >= 100,
             'is_alert_threshold'      => $budgetConsumedPercent >= 80,
-            'gross_margin'            => $grossMargin,
+            'gross_margin'            => $remainingBudget,
             'gross_margin_percent'    => $marginPercent,
         ];
     }

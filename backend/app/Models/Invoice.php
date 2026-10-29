@@ -43,6 +43,29 @@ class Invoice extends Model
         ];
     }
 
+    protected $appends = ['banking_details'];
+
+    public function getBankingDetailsAttribute(): ?array
+    {
+        $bankName = AppSetting::get('bank_name');
+        $bankAccountNo = AppSetting::get('bank_account_no');
+        $bankIfsc = AppSetting::get('bank_ifsc');
+        $bankBranch = AppSetting::get('bank_branch');
+        $bankAccountName = AppSetting::get('bank_account_name');
+        $bankUpiId = AppSetting::get('bank_upi_id');
+
+        $hasBanking = !empty($bankName) || !empty($bankAccountNo) || !empty($bankIfsc) || !empty($bankUpiId);
+
+        return $hasBanking ? [
+            'bank_name'         => $bankName,
+            'bank_branch'       => $bankBranch,
+            'bank_account_name' => $bankAccountName,
+            'bank_account_no'   => $bankAccountNo,
+            'bank_ifsc'         => $bankIfsc,
+            'bank_upi_id'       => $bankUpiId,
+        ] : null;
+    }
+
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);

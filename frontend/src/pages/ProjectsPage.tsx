@@ -43,7 +43,7 @@ export default function ProjectsPage() {
     client_id: '',
     description: '',
     status: 'in_dev',
-    total_value: '',
+    budget: '',
     start_date: new Date().toISOString().slice(0, 10),
     target_end_date: '',
     sprint_duration_days: '14',
@@ -85,9 +85,9 @@ export default function ProjectsPage() {
   // Aggregate stats
   const totalProjects = projects.length;
   const activeProjects = projects.filter((p) => p.status === 'in_dev' || p.status === 'scope_approved').length;
-  const totalValue = projects.reduce((acc, p) => acc + Number(p.total_value || 0), 0);
+  const totalBudget = projects.reduce((acc, p) => acc + Number(p.total_budget || p.total_value || 0), 0);
   const totalBudgetConsumed = projects.reduce((acc, p) => {
-    const budget = Number(p.total_value || 0);
+    const budget = Number(p.total_budget || p.total_value || 0);
     const consumed = p.budget_snapshot?.budget_consumed_percent || 0;
     return acc + (budget * consumed) / 100;
   }, 0);
@@ -101,12 +101,14 @@ export default function ProjectsPage() {
 
     try {
       setCreateSubmitting(true);
+      const budgetVal = newProject.budget ? Number(newProject.budget) : 0;
       const payload: any = {
         name: newProject.name,
         client_id: Number(newProject.client_id),
         description: newProject.description || null,
         status: newProject.status,
-        total_value: newProject.total_value ? Number(newProject.total_value) : 0,
+        total_value: budgetVal,
+        total_budget: budgetVal,
         start_date: newProject.start_date || null,
         target_end_date: newProject.target_end_date || null,
         sprint_duration_days: Number(newProject.sprint_duration_days) || 14,
@@ -121,7 +123,7 @@ export default function ProjectsPage() {
           client_id: '',
           description: '',
           status: 'in_dev',
-          total_value: '',
+          budget: '',
           start_date: new Date().toISOString().slice(0, 10),
           target_end_date: '',
           sprint_duration_days: '14',
@@ -194,7 +196,7 @@ export default function ProjectsPage() {
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Total Contract Value
+              Total Project Budget
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
@@ -202,12 +204,12 @@ export default function ProjectsPage() {
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-black text-slate-900 dark:text-white">
-              ₹{totalValue.toLocaleString('en-IN')}
+              ₹{totalBudget.toLocaleString('en-IN')}
             </span>
           </div>
           <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            Locked under baseline SOW contracts
+            Allocated execution budget across projects
           </div>
         </div>
 
@@ -225,7 +227,7 @@ export default function ProjectsPage() {
               ₹{Math.round(totalBudgetConsumed).toLocaleString('en-IN')}
             </span>
             <span className="text-xs text-slate-400">
-              ({totalValue > 0 ? Math.round((totalBudgetConsumed / totalValue) * 100) : 0}%)
+              ({totalBudget > 0 ? Math.round((totalBudgetConsumed / totalBudget) * 100) : 0}%)
             </span>
           </div>
           <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
@@ -388,7 +390,7 @@ export default function ProjectsPage() {
                             : 'text-slate-800 dark:text-slate-200'
                         }`}
                       >
-                        {budgetPercent}% (₹{Number(proj.total_value || 0).toLocaleString('en-IN')})
+                        {budgetPercent}% (₹{Number(proj.total_budget || proj.total_value || 0).toLocaleString('en-IN')})
                       </span>
                     </div>
 
@@ -498,17 +500,18 @@ export default function ProjectsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Contract / Budget Value (₹)
+                Project Budget (₹)
               </label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
-                placeholder="e.g. 25000"
-                value={newProject.total_value}
-                onChange={(e) => setNewProject({ ...newProject, total_value: e.target.value })}
-                className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                placeholder="e.g. 15000"
+                value={newProject.budget}
+                onChange={(e) => setNewProject({ ...newProject, budget: e.target.value })}
+                className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all font-mono"
               />
+              <span className="text-[10px] text-slate-400 mt-1 block">Allocated budget for project execution &amp; worklogs</span>
             </div>
 
             <div>

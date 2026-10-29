@@ -654,6 +654,11 @@ export default function ClientPortalPage() {
         <div className="animate-in fade-in duration-150">
           <RetainerInvoicesPanel
             clientId={client.id}
+            clientName={client.name}
+            clientCompany={client.company}
+            clientGst={client.gst_number}
+            clientAddress={client.billing_address}
+            clientState={client.billing_state}
             invoices={client.invoices || []}
             services={client.services || []}
             onRefresh={fetchPortalData}
@@ -672,6 +677,8 @@ export default function ClientPortalPage() {
             documents={client.documents || []}
             onRefresh={fetchPortalData}
             isClient={!isPreviewMode}
+            clientName={client.name}
+            clientCompany={client.company}
           />
         </div>
       )}
